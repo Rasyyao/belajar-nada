@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/*
+  Design tokens dari BRIEF Bagian 7.
+  Catatan: project ini pakai Tailwind v4, jadi token didefinisikan lewat `@theme`
+  di CSS (bukan `tailwind.config.js` gaya v3). Hasil utility class-nya sama persis:
+  bg-accent, text-text-2, rounded-app, font-heading, dst.
+*/
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-bg: #f5f8fc;
+  --color-surface: #ffffff;
+  --color-border: #e1e8f0;
+  --color-text-1: #1b2735;
+  --color-text-2: #5b6b7e;
+  --color-accent: #3a66d6;
+  --color-accent-soft: #eaf0fd;
+  --color-success: #24915f;
+  --color-success-soft: #e6f6ee;
+  --color-error: #c64444;
+  --color-error-soft: #fbeaea;
+  --color-worked: #7a5af8;
+  --color-worked-soft: #f1ecff;
+  --color-code-bg: #10192b;
+  --color-code-text: #dce6f7;
+  --color-code-accent: #7fb0ff;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --radius-app: 14px;
+
+  --font-heading: var(--font-fraunces), Georgia, serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-1);
+  font-family: var(--font-body);
+}
+
+/* Fokus keyboard harus selalu kelihatan — dipakai pas ngajar tanpa mouse. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::placeholder {
+  color: var(--color-text-2);
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/*
+  Highlight baris aktif di dalam Monaco. Ditulis sebagai CSS biasa (bukan utility
+  class) karena Monaco merender DOM-nya sendiri dan punya style bawaan yang cukup
+  spesifik — CSS langsung lebih aman ketimbang berharap urutan layer Tailwind menang.
+*/
+.viz-active-line {
+  background: rgba(127, 176, 255, 0.16);
+}
+
+.viz-active-gutter {
+  background: #7fb0ff;
+  width: 3px !important;
+  margin-left: 4px;
+}
+
+/*
+  Matikan ligature JetBrains Mono di tampilan kode. Tanpa ini `===` kelihatan
+  jadi satu simbol nyambung — bikin bingung siswa yang lagi belajar bedanya
+  `=`, `==`, dan `===`.
+*/
+.no-liga {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+/* Scrollbar tipis untuk panel visualisasi, biar gak makan tempat di layar proyektor. */
+.thin-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
 }
