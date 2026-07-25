@@ -1,0 +1,76 @@
+[
+  {
+    "id": "tupai-menimbun-kacang",
+    "judul": "Tupai Menimbun Kacang",
+    "tema": "push",
+    "musim": "gugur",
+    "cerita": "Musim gugur, Tupai sibuk nyari kacang buat disimpen sebelum musim dingin tiba. Tiap kali nemu kacang, dia masukin ke lubang simpanan di pohon.",
+    "visualTheme": "pohon-simpanan",
+    "deskripsiSoal": "Buat SATU function simpanSemuaKacang(kacangDitemukan) yang di dalamnya bikin tumpukan kosong, loop ke semua kacang, push satu-satu, lalu return hasilnya. Loop-nya HARUS di dalam function ini, bukan di luar.",
+    "starterCode": "function simpanSemuaKacang(kacangDitemukan) {\n  var tumpukanKacang = [];\n  // tulis kodemu di sini (loop + push)\n\n  return tumpukanKacang;\n}\n\nvar kacangDitemukan = [\"Kenari\", \"Almond\", \"Kastanye\"];\nvar tumpukanKacang = simpanSemuaKacang(kacangDitemukan);",
+    "inputs": [],
+    "promptLabels": [],
+    "hasilAkhirTervalidasi": {
+      "tumpukanKacang": ["Kenari", "Almond", "Kastanye"]
+    },
+    "alurData": {
+      "namaFunction": "simpanSemuaKacang",
+      "masuk": [{ "luar": "kacangDitemukan", "dalam": "kacangDitemukan" }],
+      "proses": "bikin tumpukan kosong → loop semua kacang → push satu-satu",
+      "keluar": { "dalam": "tumpukanKacang", "luar": "tumpukanKacang" }
+    },
+    "catatanKonsep": [
+      {
+        "judul": "push naruh di ujung belakang",
+        "isi": "push() selalu nempatin kacang baru di UJUNG BELAKANG tumpukan. Jadi urutan di dalam array sama persis dengan urutan Tupai nemuin kacangnya."
+      }
+    ],
+    "hints": [
+      "Inget lagi: array kosong itu ditulis []. Kamu butuh satu variabel buat nampung hasilnya SEBELUM loop mulai.",
+      "Loop-nya harus jalan sebanyak jumlah elemen di kacangDitemukan — coba pakai for dengan i dari 0 sampai kacangDitemukan.length - 1.",
+      "Di dalam loop, ambil elemen ke-i dari kacangDitemukan (pakai kacangDitemukan[i]), terus push ke tumpukanKacang.",
+      "Ini process flow lengkapnya:\n1. Set tumpukanKacang = []\n2. Untuk i dari 0 sampai (panjang kacangDitemukan - 1), ulangi:\n   2.1. Push kacangDitemukan[i] ke tumpukanKacang\n3. Return tumpukanKacang"
+    ]
+  },
+  {
+    "id": "tupai-membongkar-simpanan",
+    "judul": "Tupai Membongkar Simpanan",
+    "tema": "pop",
+    "musim": "dingin",
+    "cerita": "Musim dingin tiba. Tupai makan 1 kacang tiap hari dari simpanannya, selalu ambil dari yang PALING ATAS (paling terakhir disimpen musim gugur kemarin). Kalau simpanannya abis, dia puasa hari itu.",
+    "visualTheme": "pohon-simpanan",
+    "deskripsiSoal": "Tumpukan awal udah ada dari hasil musim gugur. Buat SATU function bongkarSimpanan(tumpukanKacang, jumlahHari) yang di dalamnya loop sebanyak jumlahHari, pakai if-else tiap putaran (kalau tumpukan masih ada isi, pop; kalau kosong, catat 'Habis!'), lalu return daftar kacang yang dimakan.",
+    "starterCode": "function bongkarSimpanan(tumpukanKacang, jumlahHari) {\n  var kacangDimakan = [];\n  // tulis kodemu di sini (loop + if-else + pop)\n\n  return kacangDimakan;\n}\n\nvar tumpukanKacang = [\"Kenari\", \"Almond\", \"Kastanye\"];\nvar jumlahHari = Number(ambilInput());\nvar kacangDimakan = bongkarSimpanan(tumpukanKacang, jumlahHari);",
+    "inputs": ["5"],
+    "promptLabels": ["Musim dingin berapa hari?"],
+    "hasilAkhirTervalidasi": {
+      "kacangDimakan": ["Kastanye", "Almond", "Kenari", "Habis!", "Habis!"],
+      "tumpukanKacang": []
+    },
+    "alurData": {
+      "namaFunction": "bongkarSimpanan",
+      "masuk": [
+        { "luar": "tumpukanKacang", "dalam": "tumpukanKacang" },
+        { "luar": "jumlahHari", "dalam": "jumlahHari" }
+      ],
+      "proses": "loop sebanyak jumlahHari → if-else tiap hari → pop kacang atau catat \"Habis!\"",
+      "keluar": { "dalam": "kacangDimakan", "luar": "kacangDimakan" }
+    },
+    "catatanKonsep": [
+      {
+        "judul": "LIFO — yang terakhir masuk, dia yang pertama keluar",
+        "isi": "Urutan kacangDimakan KEBALIK dari urutan waktu nyimpen, dan itu bukan bug. Kastanye disimpen PALING TERAKHIR musim gugur, jadi dia yang PALING ATAS, jadi dia yang dimakan PALING DULUAN."
+      },
+      {
+        "judul": "Array nyambung by reference",
+        "isi": "Perhatiin tumpukanKacang yang di LUAR function: dia ikut jadi [] walau function-nya cuma return kacangDimakan. Soalnya pop() di dalam function beneran ngubah array yang SAMA. Kalau parameternya angka atau teks biasa, ini gak kejadian."
+      }
+    ],
+    "hints": [
+      "Kamu butuh loop yang jalan sebanyak jumlahHari — BUKAN sebanyak isi tumpukanKacang.",
+      "Di tiap putaran, cek dulu: tumpukanKacang.length === 0 artinya kacangnya udah habis.",
+      "Kalau belum habis, pakai tumpukanKacang.pop() buat ambil kacang paling atas, push hasilnya ke kacangDimakan. Kalau udah habis, push \"Habis!\" aja ke kacangDimakan.",
+      "Ini process flow lengkapnya:\n1. Set kacangDimakan = []\n2. Untuk hari dari 1 sampai jumlahHari, ulangi:\n   2.1. Jika tumpukanKacang.length sama dengan 0, push \"Habis!\" ke kacangDimakan\n   2.2. Kalau enggak, pop dari tumpukanKacang, push hasilnya ke kacangDimakan\n3. Return kacangDimakan"
+    ]
+  }
+]

@@ -5,9 +5,17 @@
  * (binding `console.log`, batas aman, dan penerjemahan pesan error).
  */
 
-// `console` ikut di-skip karena dia kita sendiri yang suntikkan ke global scope —
-// bukan variabel bikinan siswa, jadi gak perlu nongol sebagai kartu variabel.
-const SKIP_KEYS = new Set(["window", "self", "this", "arguments", "console"]);
+// `console` dan `ambilInput` ikut di-skip karena keduanya kita sendiri yang
+// suntikkan ke global scope — bukan variabel bikinan siswa, jadi gak perlu
+// nongol sebagai kartu variabel.
+const SKIP_KEYS = new Set([
+  "window",
+  "self",
+  "this",
+  "arguments",
+  "console",
+  "ambilInput",
+]);
 
 /**
  * Batas aman. Angka di brief (2000) ternyata kekecil: loop 200 iterasi saja
@@ -50,8 +58,12 @@ function formatLogValue(value) {
  * JS-Interpreter jalan di sandbox kosong — `console` gak ada sama sekali.
  * Tanpa ini, kode siswa yang isinya `console.log(...)` (alias: hampir semua
  * kode pemula) langsung mati dengan "console is not defined".
+ *
+ * `feed` dipakai buat program interaktif: sandbox gak bisa nyentuh `prompt`
+ * atau `readline-sync`, jadi `ambilInput()` disuntikkan di sini dan jawabannya
+ * diambil berurutan dari daftar input yang sudah disiapkan.
  */
-function makeInitFunc(logs) {
+function makeInitFunc(logs, feed) {
   return function initFunc(interp, globalObject) {
     const consoleObj = interp.createObjectProto(interp.OBJECT_PROTO);
     interp.setProperty(globalObject, "console", consoleObj);
@@ -65,6 +77,21 @@ function makeInitFunc(logs) {
     interp.setProperty(consoleObj, "info", logFn);
     interp.setProperty(consoleObj, "warn", logFn);
     interp.setProperty(consoleObj, "error", logFn);
+
+    interp.setProperty(
+      globalObject,
+      "ambilInput",
+      interp.createNativeFunction(function () {
+        if (feed.index < feed.inputs.length) {
+          return String(feed.inputs[feed.index++]);
+        }
+        const err = new Error(
+          "Program masih minta input, tapi daftar input-nya sudah habis.",
+        );
+        err.isInputExhausted = true;
+        throw err;
+      }),
+    );
   };
 }
 
@@ -122,20 +149,30 @@ function toSyntaxError(err, code) {
 /**
  * Jalankan kode dan rekam snapshot per baris.
  *
- * Selalu mengembalikan `{ steps, logs, error }` — kalau error terjadi di
- * tengah jalan, step yang sudah kekumpul tetap dikembalikan supaya siswa bisa
- * scrub sampai titik error-nya, bukan cuma dapat pesan merah kosong.
+ * @param {string} code
+ * @param {{ inputs?: string[] }} [options] Daftar jawaban buat `ambilInput()`,
+ *   dipakai halaman mini project yang programnya minta input berurutan.
+ *
+ * Selalu mengembalikan `{ steps, logs, error, inputsUsed }` — kalau error
+ * terjadi di tengah jalan, step yang sudah kekumpul tetap dikembalikan supaya
+ * siswa bisa scrub sampai titik error-nya, bukan cuma dapat pesan merah kosong.
  */
-export async function runCode(code) {
+export async function runCode(code, options = {}) {
   const { default: Interpreter } = await import("js-interpreter");
 
   const logs = [];
+  const feed = { inputs: options.inputs ?? [], index: 0 };
   let interpreter;
 
   try {
-    interpreter = new Interpreter(code, makeInitFunc(logs));
+    interpreter = new Interpreter(code, makeInitFunc(logs, feed));
   } catch (err) {
-    return { steps: [], logs, error: toSyntaxError(err, code) };
+    return {
+      steps: [],
+      logs,
+      error: toSyntaxError(err, code),
+      inputsUsed: 0,
+    };
   }
 
   const totalLines = code.split("\n").length;
@@ -190,7 +227,12 @@ export async function runCode(code) {
         }
       }
 
-      steps.push({ line, vars, logCount: logs.length });
+      steps.push({
+        line,
+        vars,
+        logCount: logs.length,
+        inputCount: feed.index,
+      });
 
       if (steps.length >= MAX_SNAPSHOTS) {
         error = {
@@ -204,13 +246,23 @@ export async function runCode(code) {
       }
     }
   } catch (err) {
-    error = {
-      kind: "runtime",
-      line: lastLine,
-      title: "Error pas kode dijalankan",
-      message: err && err.message ? err.message : String(err),
-    };
+    error = err?.isInputExhausted
+      ? {
+          kind: "input",
+          line: lastLine,
+          title: "Daftar input-nya habis",
+          message:
+            "Program masih manggil ambilInput(), tapi jawaban yang disiapkan sudah kepakai semua (" +
+            feed.inputs.length +
+            " input). Tambah input di panel sebelah, atau kecilkan angka yang nentuin banyaknya perulangan.",
+        }
+      : {
+          kind: "runtime",
+          line: lastLine,
+          title: "Error pas kode dijalankan",
+          message: err && err.message ? err.message : String(err),
+        };
   }
 
-  return { steps, logs, error };
+  return { steps, logs, error, inputsUsed: feed.index };
 }

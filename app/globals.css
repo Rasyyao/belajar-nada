@@ -20,6 +20,10 @@
   --color-error-soft: #fbeaea;
   --color-worked: #7a5af8;
   --color-worked-soft: #f1ecff;
+  /* Amber khusus fitur bantuan (tombol & popup Hint) — sengaja beda dari accent
+     biar kebaca sebagai "pertolongan", bukan aksi utama. */
+  --color-hint: #a56a12;
+  --color-hint-soft: #fdf3e2;
   --color-code-bg: #10192b;
   --color-code-text: #dce6f7;
   --color-code-accent: #7fb0ff;

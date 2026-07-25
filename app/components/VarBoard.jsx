@@ -183,7 +183,13 @@ function VarCard({ name, value, prev, isNew, reads, call, pointsTo }) {
 
   // Array panjang (dan object) butuh lebar penuh — kalau dipaksa setengah kolom,
   // kotak-kotaknya kepotong dan malah harus di-scroll pas lagi ngajar.
-  const needsFullWidth = (isArray && value.length > 4) || isObject || !!call;
+  // Isi berupa teks (misal ["Kenari", "Almond", "Kastanye"]) makan tempat jauh
+  // lebih lebar dari angka, jadi panjang teksnya ikut dihitung, bukan cuma jumlah isi.
+  const arrayTextWidth = isArray
+    ? value.reduce((total, item) => total + String(item).length + 3, 0)
+    : 0;
+  const needsFullWidth =
+    (isArray && (value.length > 4 || arrayTextWidth > 24)) || isObject || !!call;
 
   return (
     <div
