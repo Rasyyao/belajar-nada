@@ -39,8 +39,14 @@ export async function getPartProject(id) {
  */
 export async function getProjectSequence() {
   return [
-    ...miniProjects.map((project) => ({ id: project.id, judul: project.judul })),
-    ...partProjects.map((project) => ({ id: project.id, judul: project.judul })),
+    ...miniProjects.map((project) => ({
+      id: project.id,
+      judul: project.judul,
+    })),
+    ...partProjects.map((project) => ({
+      id: project.id,
+      judul: project.judul,
+    })),
   ];
 }
 
@@ -56,3 +62,20 @@ export const SEASONS = {
   gugur: { label: "Gugur", emoji: "🍂" },
   dingin: { label: "Dingin", emoji: "❄️" },
 };
+
+/**
+ * Wajah tiap soal berpart di badge, dikunci ke `visualTheme` di JSON-nya.
+ * Dipisah dari data soal karena ini murni urusan tampilan — dan ditaruh di sini
+ * (bukan ditulis langsung di halaman) supaya halaman daftar dan halaman detail
+ * gak bisa beda sendiri-sendiri pas ada kasus baru masuk.
+ */
+const PART_THEMES = {
+  "taman-bermain": { emoji: "🛝", tema: "push + pop" },
+  "loket-tiket": { emoji: "🎟️", tema: "if-else + akumulasi" },
+};
+
+const THEME_FALLBACK = { emoji: "🧩", tema: "array" };
+
+export function partTheme(visualTheme) {
+  return PART_THEMES[visualTheme] ?? THEME_FALLBACK;
+}

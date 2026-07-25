@@ -14,6 +14,7 @@ import ResultCheck, { matchesExpected } from "./ResultCheck";
 import StepView, { buildVarOrder } from "./StepView";
 import Transport from "./Transport";
 import { es5ify, runCode } from "../lib/interpreter";
+import { partTheme } from "../lib/projects";
 import { useStepPlayer } from "../lib/useStepPlayer";
 
 const NO_STEPS = [];
@@ -33,6 +34,35 @@ function readNotes(id, partKe) {
 /** Ganti satu elemen state per-part tanpa nyentuh part yang lain. */
 const replaceAt = (list, index, value) =>
   list.map((item, i) => (i === index ? value : item));
+
+/**
+ * Nyari data awal part ini yang sebenernya HASIL dari part sebelumnya.
+ *
+ * Di soal kayak Loket Karcis, `daftarHarga` yang jadi input Part 2 itu bukan
+ * angka yang kebetulan mirip — itu persis output Part 1. Kalau gak ditandain,
+ * siswa gampang baca dua part itu sebagai dua soal yang gak nyambung.
+ * Dicocokin lewat nama + isi, jadi berlaku sendiri buat soal berpart lain yang
+ * polanya sama tanpa perlu nulis apa-apa lagi di JSON-nya.
+ */
+function findInputOrigins(parts, activeIndex) {
+  const active = parts[activeIndex];
+  const origins = {};
+
+  for (const [name, value] of Object.entries(active.inputAwal ?? {})) {
+    for (let i = 0; i < activeIndex; i++) {
+      const hasil = parts[i].hasilAkhirTervalidasi ?? {};
+      if (
+        name in hasil &&
+        JSON.stringify(hasil[name]) === JSON.stringify(value)
+      ) {
+        origins[name] = parts[i].partKe;
+        break;
+      }
+    }
+  }
+
+  return origins;
+}
 
 /**
  * Satu soal yang dikerjain bertahap: Part 1 dan Part 2 tinggal di HALAMAN YANG
@@ -72,6 +102,11 @@ export default function PartProjectRunner({ project, nextProject }) {
   const resetPlayer = player.reset;
   const varOrder = useMemo(() => buildVarOrder(steps), [steps]);
   const codeLines = useMemo(() => code.split("\n"), [code]);
+  const theme = partTheme(project.visualTheme);
+  const inputOrigins = useMemo(
+    () => findInputOrigins(parts, active),
+    [parts, active],
+  );
 
   const handleRun = useCallback(async () => {
     setRunning(true);
@@ -179,7 +214,7 @@ export default function PartProjectRunner({ project, nextProject }) {
         </h1>
 
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-text-2">
-          <span aria-hidden>🛝</span>
+          <span aria-hidden>{theme.emoji}</span>
           Soal berpart
           <span className="text-border">·</span>
           <code className="font-mono font-semibold text-accent">
@@ -305,7 +340,7 @@ export default function PartProjectRunner({ project, nextProject }) {
           </Panel>
 
           <Panel title="Data awal & target" className="shrink-0 xl:max-h-[62%]">
-            <InitialData data={part.inputAwal} />
+            <InitialData data={part.inputAwal} origins={inputOrigins} />
             <ExpectedResult expected={part.hasilAkhirTervalidasi} />
           </Panel>
         </div>

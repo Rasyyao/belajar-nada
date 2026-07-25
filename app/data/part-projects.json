@@ -94,5 +94,87 @@
         ]
       }
     ]
+  },
+  {
+    "id": "loket-karcis-wahana",
+    "judul": "Loket Karcis Wahana",
+    "ceritaUtama": "Operator wahana di taman bermain nyatet umur tiap pengunjung yang beli tiket. Anak-anak dapet harga lebih murah, dewasa harga penuh. Di akhir hari, dia perlu tau berapa total pendapatannya.",
+    "visualTheme": "loket-tiket",
+    "parts": [
+      {
+        "partKe": 1,
+        "judulPart": "Menentukan Harga Tiket per Pengunjung",
+        "tema": "push + if-else buat nentuin nilai (bukan buat mutusin push/pop)",
+        "cerita": "Tiap pengunjung yang beli tiket dicatet umurnya. Yang umurnya di bawah 12 dapet harga anak, sisanya harga dewasa. Operator mau punya daftar harga tiket buat tiap orang, urut sesuai kedatangan.",
+        "deskripsiSoal": "Buat SATU function buatDaftarHarga(daftarUmur, hargaAnak, hargaDewasa) yang loop ke daftarUmur — kalau umurnya di bawah 12, harganya hargaAnak; kalau enggak, hargaDewasa. Push harga itu ke daftarHarga. Return daftarHarga di akhir.",
+        "namaFunction": "buatDaftarHarga",
+        "starterCode": "function buatDaftarHarga(daftarUmur, hargaAnak, hargaDewasa) {\n  var daftarHarga = [];\n  // tulis kodemu di sini\n\n  return daftarHarga;\n}\n\nvar daftarUmur = [8, 15, 10, 22];\nvar daftarHarga = buatDaftarHarga(daftarUmur, 15000, 30000);",
+        "inputAwal": {
+          "daftarUmur": [8, 15, 10, 22],
+          "hargaAnak": 15000,
+          "hargaDewasa": 30000
+        },
+        "hasilAkhirTervalidasi": {
+          "daftarHarga": [15000, 30000, 15000, 30000]
+        },
+        "alurData": {
+          "namaFunction": "buatDaftarHarga",
+          "masuk": [
+            { "luar": "daftarUmur", "dalam": "daftarUmur" },
+            { "luar": "hargaAnak", "dalam": "hargaAnak" },
+            { "luar": "hargaDewasa", "dalam": "hargaDewasa" }
+          ],
+          "proses": "bikin daftarHarga kosong → loop semua umur → if-else nentuin harga → push harga itu",
+          "keluar": { "dalam": "daftarHarga", "luar": "daftarHarga" }
+        },
+        "catatanKonsep": [
+          {
+            "judul": "if-else di sini buat nentuin NILAI, bukan buat mutusin push/pop",
+            "isi": "Beda dari kasus Antrian Perosotan (if-else mutusin push ATAU pop, atau push ke array MANA), di sini if-else cuma nentuin ANGKA berapa yang bakal di-push. Push-nya selalu kejadian tiap putaran — yang beda cuma nilainya."
+          }
+        ],
+        "hints": [
+          "Sebelum push, kamu butuh 1 variabel sementara (misal harga) buat nampung hasil keputusan if-else di putaran itu.",
+          "Cek daftarUmur[i] < 12 — kalau true, harga = hargaAnak. Kalau enggak, harga = hargaDewasa.",
+          "Setelah if-else selesai nentuin harga, baru push harga itu ke daftarHarga. Push-nya di LUAR blok if-else (jalan tiap putaran, bukan cuma pas salah satu kondisi).",
+          "Ini process flow lengkapnya:\n1. Set daftarHarga = []\n2. Untuk i dari 0 sampai (panjang daftarUmur - 1), ulangi:\n   2.1. Jika daftarUmur[i] < 12, set harga = hargaAnak\n   2.2. Kalau enggak, set harga = hargaDewasa\n   2.3. Push harga ke daftarHarga\n3. Return daftarHarga"
+        ]
+      },
+      {
+        "partKe": 2,
+        "judulPart": "Menghitung Total Pendapatan Hari Ini",
+        "tema": "akumulasi murni dari hasil Part 1 (gak ada push/pop sama sekali)",
+        "cerita": "Dari daftar harga tiket yang udah disusun di Part 1, operator sekarang mau tau: total duit yang masuk hari ini berapa?",
+        "deskripsiSoal": "Buat SATU function hitungTotalPendapatan(daftarHarga) yang loop ke daftarHarga, jumlahin semuanya ke satu variabel total. Return total di akhir.",
+        "namaFunction": "hitungTotalPendapatan",
+        "starterCode": "function hitungTotalPendapatan(daftarHarga) {\n  var total = 0;\n  // tulis kodemu di sini\n\n  return total;\n}\n\nvar daftarHarga = [15000, 30000, 15000, 30000];\nvar totalPendapatan = hitungTotalPendapatan(daftarHarga);",
+        "inputAwal": {
+          "daftarHarga": [15000, 30000, 15000, 30000]
+        },
+        "hasilAkhirTervalidasi": { "totalPendapatan": 90000 },
+        "alurData": {
+          "namaFunction": "hitungTotalPendapatan",
+          "masuk": [{ "luar": "daftarHarga", "dalam": "daftarHarga" }],
+          "proses": "loop semua harga → tambahin ke total tiap putaran",
+          "keluar": { "dalam": "total", "luar": "totalPendapatan" }
+        },
+        "catatanKonsep": [
+          {
+            "judul": "Part 2 ini nerusin hasil Part 1",
+            "isi": "daftarHarga yang jadi input di sini itu OUTPUT dari Part 1 — nunjukin gimana hasil satu function bisa jadi bahan buat function lain, bukan cuma dipake sekali terus dibuang."
+          },
+          {
+            "judul": "Gak ada push/pop di Part 2 ini sama sekali",
+            "isi": "Murni pola akumulasi (nambah ke satu variabel angka) yang udah pernah dipelajari — dikombinasiin lagi di sini biar keliatan pola lama juga masih relevan, gak semua soal harus push/pop."
+          }
+        ],
+        "hints": [
+          "total itu mulai dari 0, sebelum loop mulai.",
+          "Tiap putaran, tambahin daftarHarga[i] ke total — pola yang sama kayak soal 'total belanja' atau 'total nilai' yang udah pernah dikerjain.",
+          "Gak perlu if-else sama sekali di Part 2 ini — murni loop + akumulasi doang.",
+          "Ini process flow lengkapnya:\n1. Set total = 0\n2. Untuk i dari 0 sampai (panjang daftarHarga - 1), ulangi:\n   2.1. total = total + daftarHarga[i]\n3. Return total"
+        ]
+      }
+    ]
   }
 ]

@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { getMiniProjects, getPartProjects, SEASONS } from "../lib/projects";
+import {
+  getMiniProjects,
+  getPartProjects,
+  partTheme,
+  SEASONS,
+} from "../lib/projects";
 
 export const metadata = {
   title: "Mini Project — Playground Belajar",
@@ -100,39 +105,42 @@ export default async function MiniProjectList() {
 
         {/* Soal berpart: tetap SATU kartu walau di dalamnya ada beberapa part —
             part-nya baru kelihatan setelah kartunya dibuka. */}
-        {partProjects.map((project) => (
-          <ProjectCard
-            key={project.id}
-            href={`/mini-project/${project.id}`}
-            judul={project.judul}
-            cerita={project.ceritaUtama}
-            meta={`${project.parts.length} part berurutan`}
-            badge={
-              <Badge>
-                <span aria-hidden>🛝</span>
-                Soal berpart
-                <span className="text-border">·</span>
-                <code className="font-mono font-semibold text-accent">
-                  push + pop
-                </code>
-              </Badge>
-            }
-          >
-            <ol className="flex flex-col gap-1">
-              {project.parts.map((part) => (
-                <li
-                  key={part.partKe}
-                  className="flex items-baseline gap-2 text-[12.5px] text-text-2"
-                >
-                  <span className="shrink-0 rounded-[6px] border border-border bg-bg px-1.5 py-px font-mono text-[10px] font-semibold text-text-1">
-                    Part {part.partKe}
-                  </span>
-                  {part.judulPart}
-                </li>
-              ))}
-            </ol>
-          </ProjectCard>
-        ))}
+        {partProjects.map((project) => {
+          const theme = partTheme(project.visualTheme);
+          return (
+            <ProjectCard
+              key={project.id}
+              href={`/mini-project/${project.id}`}
+              judul={project.judul}
+              cerita={project.ceritaUtama}
+              meta={`${project.parts.length} part berurutan`}
+              badge={
+                <Badge>
+                  <span aria-hidden>{theme.emoji}</span>
+                  Soal berpart
+                  <span className="text-border">·</span>
+                  <code className="font-mono font-semibold text-accent">
+                    {theme.tema}
+                  </code>
+                </Badge>
+              }
+            >
+              <ol className="flex flex-col gap-1">
+                {project.parts.map((part) => (
+                  <li
+                    key={part.partKe}
+                    className="flex items-baseline gap-2 text-[12.5px] text-text-2"
+                  >
+                    <span className="shrink-0 rounded-[6px] border border-border bg-bg px-1.5 py-px font-mono text-[10px] font-semibold text-text-1">
+                      Part {part.partKe}
+                    </span>
+                    {part.judulPart}
+                  </li>
+                ))}
+              </ol>
+            </ProjectCard>
+          );
+        })}
       </ol>
 
       <p className="text-xs text-text-2">
