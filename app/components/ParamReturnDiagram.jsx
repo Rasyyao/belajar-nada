@@ -38,6 +38,11 @@ function Arrow({ label, tone }) {
  * hasil di dalam keluarnya lewat mana". Digambar sebagai dua pintu — masuk lewat
  * parameter (biru), keluar lewat return (ungu) — pakai nama variabel project ini
  * sendiri, bukan contoh generik.
+ *
+ * `alur.keluar` boleh `null`: itu buat function yang SENGAJA gak punya return,
+ * yang hasilnya nempel langsung ke array yang dioper sebagai parameter. Kasus itu
+ * dikasih penjelasannya sendiri lewat `alur.catatanKeluar`, bukan dikosongin —
+ * "gak ada pintu keluar" justru pelajarannya di situ.
  */
 export default function ParamReturnDiagram({ alur }) {
   if (!alur) return null;
@@ -74,16 +79,43 @@ export default function ParamReturnDiagram({ alur }) {
       </div>
 
       <div className="px-3 py-2.5">
-        <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-worked uppercase">
-          Return = pintu keluar
-        </p>
-        <Slot
-          name={`return ${alur.keluar.dalam}`}
-          where="di dalam function"
-          tone="worked"
-        />
-        <Arrow label="ditangkep di luar pakai var ... =" tone="worked" />
-        <Slot name={alur.keluar.luar} where="di luar (global)" tone="worked" />
+        {alur.keluar ? (
+          <>
+            <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-worked uppercase">
+              Return = pintu keluar
+            </p>
+            <Slot
+              name={`return ${alur.keluar.dalam}`}
+              where="di dalam function"
+              tone="worked"
+            />
+            <Arrow label="ditangkep di luar pakai var ... =" tone="worked" />
+            <Slot
+              name={alur.keluar.luar}
+              where="di luar (global)"
+              tone="worked"
+            />
+          </>
+        ) : (
+          <>
+            <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-worked uppercase">
+              Tanpa return — sengaja
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="no-liga rounded-[7px] border border-dashed border-worked/50 bg-worked-soft px-2 py-1 font-mono text-[12px] font-semibold text-worked">
+                (gak ada return)
+              </code>
+              <span className="text-[10px] text-text-2">
+                pintu keluarnya ditutup
+              </span>
+            </div>
+            {alur.catatanKeluar && (
+              <p className="mt-2 text-[12px] leading-relaxed text-text-1">
+                {alur.catatanKeluar}
+              </p>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

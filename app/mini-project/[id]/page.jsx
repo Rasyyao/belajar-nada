@@ -1,39 +1,65 @@
 import { notFound } from "next/navigation";
+import PartProjectRunner from "../../components/PartProjectRunner";
 import ProjectRunner from "../../components/ProjectRunner";
-import { getMiniProject, getMiniProjects } from "../../lib/projects";
+import {
+  getMiniProject,
+  getMiniProjects,
+  getNextProject,
+  getPartProject,
+  getPartProjects,
+} from "../../lib/projects";
 
 export async function generateStaticParams() {
-  const projects = await getMiniProjects();
-  return projects.map((project) => ({ id: project.id }));
+  const [projects, partProjects] = await Promise.all([
+    getMiniProjects(),
+    getPartProjects(),
+  ]);
+  return [...projects, ...partProjects].map((project) => ({ id: project.id }));
 }
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const project = await getMiniProject(id);
-  if (!project) return { title: "Mini project tidak ditemukan" };
-  return {
-    title: `${project.judul} — Mini Project`,
-    description: project.cerita,
-  };
+  if (project) {
+    return {
+      title: `${project.judul} — Mini Project`,
+      description: project.cerita,
+    };
+  }
+
+  const partProject = await getPartProject(id);
+  if (partProject) {
+    return {
+      title: `${partProject.judul} — Mini Project`,
+      description: partProject.ceritaUtama,
+    };
+  }
+
+  return { title: "Mini project tidak ditemukan" };
 }
 
 export default async function MiniProjectDetail({ params }) {
   // Next 16: `params` sampai sebagai Promise, harus di-await.
   const { id } = await params;
+
+  // Satu route buat dua skema soal: mini project (satu soal satu halaman) dan
+  // soal berpart (beberapa part dalam satu halaman). Dibedain di sini, bukan di
+  // URL, biar tautan dari daftar tetap seragam.
   const project = await getMiniProject(id);
-  if (!project) notFound();
+  const partProject = project ? null : await getPartProject(id);
+  if (!project && !partProject) notFound();
 
-  const all = await getMiniProjects();
-  const index = all.findIndex((item) => item.id === id);
-  const next = index >= 0 ? (all[index + 1] ?? null) : null;
+  const next = await getNextProject(id);
 
-  return (
-    // `key` per id: pindah project = komponen di-mount ulang, jadi kode, input,
-    // dan progress hint mulai dari nol lagi — gak kebawa dari project sebelumnya.
-    <ProjectRunner
-      key={project.id}
-      project={project}
-      nextProject={next ? { id: next.id, judul: next.judul } : null}
+  // `key` per id: pindah soal = komponen di-mount ulang, jadi kode, input,
+  // dan progress hint mulai dari nol lagi — gak kebawa dari soal sebelumnya.
+  return project ? (
+    <ProjectRunner key={project.id} project={project} nextProject={next} />
+  ) : (
+    <PartProjectRunner
+      key={partProject.id}
+      project={partProject}
+      nextProject={next}
     />
   );
 }

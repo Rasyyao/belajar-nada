@@ -17,6 +17,17 @@ const LENGTH_READ = /([A-Za-z_$][\w$]*)\s*\.\s*length\b/g;
 /** Method yang nambah isi array — dipakai buat nampilin slot tujuan. */
 const ADDING_METHODS = new Set(["push", "unshift"]);
 
+/**
+ * Method yang ngeluarin isi array, plus kotak mana yang bakal keluar.
+ * Dipakai biar "berkurang" kelihatan sejelas "nambah": pas baris pop() lagi
+ * aktif, isinya masih utuh di snapshot ini — yang bakal hilang baru ditandain,
+ * hilangnya kejadian di langkah berikutnya.
+ */
+const REMOVING_METHODS = {
+  pop: (array) => array.length - 1,
+  shift: () => 0,
+};
+
 const METHOD_VERB = {
   push: "ditambah di belakang",
   unshift: "ditambah di depan",
@@ -108,12 +119,19 @@ export function readAccess(line, vars) {
     const [, name, method] = match;
     const target = vars[name];
     if (!Array.isArray(target)) continue;
+    const findLeaving = REMOVING_METHODS[method];
+    // Array kosong gak punya kotak yang bisa keluar — pop()-nya sah, cuma gak
+    // ngasilin apa-apa, jadi jangan nunjuk kotak yang gak ada.
+    const leavingIndex =
+      findLeaving && target.length > 0 ? findLeaving(target) : null;
     calls.push({
       name,
       method,
       verb: METHOD_VERB[method] ?? method,
       adds: ADDING_METHODS.has(method),
       nextIndex: method === "push" ? target.length : 0,
+      leavingIndex,
+      leavingValue: leavingIndex === null ? undefined : target[leavingIndex],
     });
   }
 

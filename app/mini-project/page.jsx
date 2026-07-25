@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getMiniProjects, SEASONS } from "../lib/projects";
+import { getMiniProjects, getPartProjects, SEASONS } from "../lib/projects";
 
 export const metadata = {
   title: "Mini Project — Playground Belajar",
@@ -7,20 +7,52 @@ export const metadata = {
     "Kumpulan mini project: program utuh yang minta input, dijalankan step-by-step.",
 };
 
-function SeasonBadge({ musim, tema }) {
-  const season = SEASONS[musim];
+function Badge({ children }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-bg px-2.5 py-1 text-[11px] font-medium text-text-2">
-      <span aria-hidden>{season?.emoji ?? "•"}</span>
-      {season?.label ?? musim}
-      <span className="text-border">·</span>
-      <code className="font-mono font-semibold text-accent">{tema}</code>
+      {children}
     </span>
   );
 }
 
+/** Kulit kartu dipisah biar dua jenis soal kelihatan setara di daftar. */
+function ProjectCard({ href, badge, meta, judul, cerita, children }) {
+  return (
+    <li className="flex">
+      <Link
+        href={href}
+        className="group flex flex-1 flex-col gap-3 rounded-app border border-border bg-surface p-5 transition-colors hover:border-accent/50 hover:bg-accent-soft/30"
+      >
+        <div className="flex items-center justify-between gap-3">
+          {badge}
+          <span className="font-mono text-[11px] text-text-2">{meta}</span>
+        </div>
+
+        <h2 className="font-heading text-xl text-text-1">{judul}</h2>
+
+        <p className="text-[13px] leading-relaxed text-text-2">{cerita}</p>
+
+        {children}
+
+        <p className="mt-auto flex items-center gap-2 pt-1 text-[13px] font-semibold text-accent">
+          Kerjain
+          <span
+            aria-hidden
+            className="transition-transform group-hover:translate-x-0.5"
+          >
+            →
+          </span>
+        </p>
+      </Link>
+    </li>
+  );
+}
+
 export default async function MiniProjectList() {
-  const projects = await getMiniProjects();
+  const [projects, partProjects] = await Promise.all([
+    getMiniProjects(),
+    getPartProjects(),
+  ]);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 px-4 py-6">
@@ -29,8 +61,9 @@ export default async function MiniProjectList() {
           <h1 className="font-heading text-2xl text-text-1">Mini Project</h1>
           <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-text-2">
             Bukan soal drill — ini program utuh yang minta jawaban dulu, baru
-            nentuin hasilnya. Dua project di bawah nyambung ceritanya: musim
-            gugur nimbun, musim dingin bongkar.
+            nentuin hasilnya. Dua project Tupai nyambung ceritanya (musim gugur
+            nimbun, musim dingin bongkar), sementara soal berpart dikerjain
+            bertahap di satu halaman.
           </p>
         </div>
         <Link
@@ -42,43 +75,70 @@ export default async function MiniProjectList() {
       </header>
 
       <ol className="grid gap-4 md:grid-cols-2">
-        {projects.map((project, index) => (
-          <li key={project.id} className="flex">
-            <Link
+        {projects.map((project, index) => {
+          const season = SEASONS[project.musim];
+          return (
+            <ProjectCard
+              key={project.id}
               href={`/mini-project/${project.id}`}
-              className="group flex flex-1 flex-col gap-3 rounded-app border border-border bg-surface p-5 transition-colors hover:border-accent/50 hover:bg-accent-soft/30"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <SeasonBadge musim={project.musim} tema={project.tema} />
-                <span className="font-mono text-[11px] text-text-2">
-                  bagian {index + 1} dari {projects.length}
-                </span>
-              </div>
+              judul={project.judul}
+              cerita={project.cerita}
+              meta={`bagian ${index + 1} dari ${projects.length}`}
+              badge={
+                <Badge>
+                  <span aria-hidden>{season?.emoji ?? "•"}</span>
+                  {season?.label ?? project.musim}
+                  <span className="text-border">·</span>
+                  <code className="font-mono font-semibold text-accent">
+                    {project.tema}
+                  </code>
+                </Badge>
+              }
+            />
+          );
+        })}
 
-              <h2 className="font-heading text-xl text-text-1">
-                {project.judul}
-              </h2>
-
-              <p className="text-[13px] leading-relaxed text-text-2">
-                {project.cerita}
-              </p>
-
-              <p className="mt-auto flex items-center gap-2 text-[13px] font-semibold text-accent">
-                Kerjain
-                <span
-                  aria-hidden
-                  className="transition-transform group-hover:translate-x-0.5"
+        {/* Soal berpart: tetap SATU kartu walau di dalamnya ada beberapa part —
+            part-nya baru kelihatan setelah kartunya dibuka. */}
+        {partProjects.map((project) => (
+          <ProjectCard
+            key={project.id}
+            href={`/mini-project/${project.id}`}
+            judul={project.judul}
+            cerita={project.ceritaUtama}
+            meta={`${project.parts.length} part berurutan`}
+            badge={
+              <Badge>
+                <span aria-hidden>🛝</span>
+                Soal berpart
+                <span className="text-border">·</span>
+                <code className="font-mono font-semibold text-accent">
+                  push + pop
+                </code>
+              </Badge>
+            }
+          >
+            <ol className="flex flex-col gap-1">
+              {project.parts.map((part) => (
+                <li
+                  key={part.partKe}
+                  className="flex items-baseline gap-2 text-[12.5px] text-text-2"
                 >
-                  →
-                </span>
-              </p>
-            </Link>
-          </li>
+                  <span className="shrink-0 rounded-[6px] border border-border bg-bg px-1.5 py-px font-mono text-[10px] font-semibold text-text-1">
+                    Part {part.partKe}
+                  </span>
+                  {part.judulPart}
+                </li>
+              ))}
+            </ol>
+          </ProjectCard>
         ))}
       </ol>
 
       <p className="text-xs text-text-2">
-        Materi masih dibaca dari <code className="font-mono">app/data/mini-projects.json</code>.
+        Materi masih dibaca dari{" "}
+        <code className="font-mono">app/data/mini-projects.json</code> dan{" "}
+        <code className="font-mono">app/data/part-projects.json</code>.
       </p>
     </div>
   );

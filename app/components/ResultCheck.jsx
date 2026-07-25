@@ -5,19 +5,34 @@ function format(value) {
   return JSON.stringify(value);
 }
 
+function compare(expected, lastStep) {
+  return Object.entries(expected ?? {}).map(([name, want]) => {
+    const got = lastStep.vars[name];
+    return { name, want, got, match: format(want) === format(got) };
+  });
+}
+
+/**
+ * Apakah hasil akhir satu run sudah cocok semua? Dipakai di luar komponen ini
+ * buat nandain part yang udah beres di tab — pakai perbandingan yang sama persis
+ * dengan tabel di bawah, biar gak ada kasus "tabelnya hijau tapi tabnya belum".
+ */
+export function matchesExpected(expected, lastStep) {
+  if (!lastStep) return false;
+  const rows = compare(expected, lastStep);
+  return rows.length > 0 && rows.every((row) => row.match);
+}
+
 /**
  * Bandingin nilai akhir variabel dengan hasil yang sudah divalidasi di data.
  * Ini alat bantu ngajar buat jawab "kodeku udah bener belum?" — bukan penilai
  * otomatis, jadi nilai yang diharapkan sengaja ditampilin apa adanya.
  */
 export default function ResultCheck({ expected, lastStep }) {
-  const entries = Object.entries(expected ?? {});
-  if (entries.length === 0 || !lastStep) return null;
+  if (!lastStep) return null;
 
-  const rows = entries.map(([name, want]) => {
-    const got = lastStep.vars[name];
-    return { name, want, got, match: format(want) === format(got) };
-  });
+  const rows = compare(expected, lastStep);
+  if (rows.length === 0) return null;
 
   const allMatch = rows.every((row) => row.match);
 

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import AccessStrip from "./AccessStrip";
+import TrackCompare from "./TrackCompare";
 import VarBoard from "./VarBoard";
 import { readAccess } from "../lib/access";
 
@@ -19,6 +20,7 @@ export default function StepView({
   varOrder,
   logs = NO_LOGS,
   showAllLogs = false,
+  compare = null,
 }) {
   const activeLine = step ? step.line : null;
   const activeSource = activeLine ? (codeLines[activeLine - 1] ?? "") : "";
@@ -50,6 +52,17 @@ export default function StepView({
 
       <AccessStrip access={access} />
 
+      {/* Bagan tambahan buat soal yang ngebagi satu sumber ke beberapa array
+          tujuan. Dirender di sini (bukan di halaman) supaya ikut kebagian
+          `access` — jadi jalur yang LAGI diisi baris ini bisa ditandai, gak
+          nunggu isinya keburu nambah dulu di langkah berikutnya. */}
+      <TrackCompare
+        config={compare}
+        step={step}
+        prevStep={prevStep}
+        access={access}
+      />
+
       <VarBoard
         vars={step.vars}
         prevVars={prevStep ? prevStep.vars : null}
@@ -65,6 +78,10 @@ export default function StepView({
         <span className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-full bg-worked" />
           barusan berubah
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-error" />
+          bakal keluar (pop/shift)
         </span>
       </div>
 

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "antrian-perosotan",
+    "judul": "Antrian Perosotan Taman Bermain",
+    "ceritaUtama": "Di taman bermain, ada perosotan yang lagi ngehits. Anak-anak antri, tapi kadang ada yang berubah pikiran pas udah di posisi belakang antrian.",
+    "visualTheme": "taman-bermain",
+    "parts": [
+      {
+        "partKe": 1,
+        "judulPart": "Mencatat Antrian dengan Pembatalan",
+        "tema": "push + pop dicampur dalam 1 loop",
+        "cerita": "Penjaga taman nyatet siapa yang masuk antrian dari daftar kejadian. Kalau ada anak bilang \"batal\", itu tandanya anak yang PALING BELAKANG antrian berubah pikiran dan keluar.",
+        "deskripsiSoal": "Buat SATU function catatAntrian(daftarAksi) yang loop ke daftarAksi — kalau elemennya persis \"batal\", pop dari antrian; kalau bukan, push elemen itu (nama) ke antrian. Return antrian di akhir.",
+        "namaFunction": "catatAntrian",
+        "starterCode": "function catatAntrian(daftarAksi) {\n  var antrian = [];\n  // tulis kodemu di sini\n\n  return antrian;\n}\n\nvar daftarAksi = [\"Ani\", \"Budi\", \"batal\", \"Citra\", \"Dedi\", \"batal\"];\nvar antrian = catatAntrian(daftarAksi);",
+        "inputAwal": {
+          "daftarAksi": ["Ani", "Budi", "batal", "Citra", "Dedi", "batal"]
+        },
+        "hasilAkhirTervalidasi": { "antrian": ["Ani", "Citra"] },
+        "alurData": {
+          "namaFunction": "catatAntrian",
+          "masuk": [{ "luar": "daftarAksi", "dalam": "daftarAksi" }],
+          "proses": "bikin antrian kosong → loop semua kejadian → push nama ATAU pop, tergantung isinya",
+          "keluar": { "dalam": "antrian", "luar": "antrian" }
+        },
+        "catatanKonsep": [
+          {
+            "judul": "Satu loop, dua kemungkinan aksi",
+            "isi": "Beda dari kasus Tupai yang push semua dulu baru pop semua, di sini push dan pop gantian di dalam SATU loop yang sama. Yang nentuin bukan urutan loop-nya, tapi isi daftarAksi[i] di putaran itu."
+          },
+          {
+            "judul": "\"batal\" nyabut yang paling belakang",
+            "isi": "pop() selalu ngambil dari UJUNG BELAKANG, jadi yang keluar itu anak yang paling terakhir masuk — bukan yang paling depan antrian."
+          }
+        ],
+        "hints": [
+          "Tiap elemen di daftarAksi itu bisa dua jenis: nama biasa, atau teks khusus \"batal\". Kamu perlu if-else buat bedain dua kasus itu.",
+          "Kalau elemennya PERSIS sama dengan teks \"batal\" (pakai ===), berarti harus pop dari antrian. Kalau bukan, berarti itu nama, push ke antrian.",
+          "Loop-nya jalan ke SEMUA elemen daftarAksi (pakai daftarAksi.length), push ATAU pop tergantung hasil pengecekan di tiap putaran — bukan push semua dulu baru pop semua kayak kasus Tupai.",
+          "Ini process flow lengkapnya:\n1. Set antrian = []\n2. Untuk i dari 0 sampai (panjang daftarAksi - 1), ulangi:\n   2.1. Jika daftarAksi[i] sama dengan \"batal\", pop dari antrian\n   2.2. Kalau enggak, push daftarAksi[i] ke antrian\n3. Return antrian"
+        ]
+      },
+      {
+        "partKe": 2,
+        "judulPart": "Bagi Antrian ke 2 Jalur Perosotan",
+        "tema": "push kondisional ke 2 array tujuan berbeda (by reference, tanpa return)",
+        "cerita": "Antrian mau dibagi ke 2 jalur perosotan biar gak numpuk — anak di posisi GENAP (index 0, 2, 4, ...) masuk Jalur A, yang GANJIL (index 1, 3, 5, ...) masuk Jalur B.",
+        "deskripsiSoal": "Buat SATU function bagiJalur(antrian, jalurGenap, jalurGanjil) yang loop ke antrian — kalau index-nya genap, push ke jalurGenap; kalau ganjil, push ke jalurGanjil. Function ini GAK PERLU return apa-apa.",
+        "namaFunction": "bagiJalur",
+        "starterCode": "function bagiJalur(antrian, jalurGenap, jalurGanjil) {\n  // tulis kodemu di sini\n\n}\n\nvar antrian = [\"Ani\", \"Citra\", \"Eka\", \"Fani\"];\nvar jalurGenap = [];\nvar jalurGanjil = [];\nbagiJalur(antrian, jalurGenap, jalurGanjil);",
+        "inputAwal": {
+          "antrian": ["Ani", "Citra", "Eka", "Fani"],
+          "jalurGenap": [],
+          "jalurGanjil": []
+        },
+        "hasilAkhirTervalidasi": {
+          "jalurGenap": ["Ani", "Eka"],
+          "jalurGanjil": ["Citra", "Fani"]
+        },
+        "alurData": {
+          "namaFunction": "bagiJalur",
+          "masuk": [
+            { "luar": "antrian", "dalam": "antrian" },
+            { "luar": "jalurGenap", "dalam": "jalurGenap" },
+            { "luar": "jalurGanjil", "dalam": "jalurGanjil" }
+          ],
+          "proses": "loop ke antrian → cek index genap/ganjil → push ke jalur yang cocok",
+          "keluar": null,
+          "catatanKeluar": "Function ini SENGAJA gak punya return — dan itu bukan lupa. jalurGenap dan jalurGanjil yang di luar itu VARIABEL YANG SAMA PERSIS sama yang di dalam function: bukan disalin, tapi \"dipinjemin\". Jadi begitu di-push dari dalam, yang di luar ikut keisi sendiri."
+        },
+        "catatanKonsep": [
+          {
+            "judul": "Kok gak ada return tapi hasilnya kesimpen?",
+            "isi": "Array yang dioper sebagai parameter itu nyambung by reference — yang di dalam function dan yang di luar itu benda yang sama. Beda sama angka atau teks biasa, yang kalau diubah di dalam gak ngefek ke luar."
+          },
+          {
+            "judul": "Satu putaran, satu jalur",
+            "isi": "Tiap putaran loop cuma nambahin ke SALAH SATU jalur, gak pernah dua-duanya sekaligus. i % 2 === 0 yang mutusin ke mana anak itu jatuh."
+          }
+        ],
+        "bandingkan": {
+          "judul": "Dua jalur perosotan",
+          "keterangan": "Perhatiin tiap langkah: cuma satu jalur yang nambah, yang satunya diam.",
+          "tracks": [
+            { "name": "jalurGenap", "label": "Jalur A · posisi genap" },
+            { "name": "jalurGanjil", "label": "Jalur B · posisi ganjil" }
+          ]
+        },
+        "hints": [
+          "Function ini nerima 3 array sebagai parameter: antrian (yang mau dibagi), jalurGenap dan jalurGanjil (dua-duanya kosong, siap diisi). Gak perlu return apa-apa — array yang dioper sebagai parameter bisa diubah langsung dari dalam function (inget konsep 'array nyambung by reference').",
+          "Loop ke antrian pakai index i. Buat mutusin genap/ganjil, cek i % 2 === 0.",
+          "Kalau i genap (0, 2, 4, ...), push antrian[i] ke jalurGenap. Kalau ganjil (1, 3, 5, ...), push ke jalurGanjil.",
+          "Ini process flow lengkapnya:\n1. Untuk i dari 0 sampai (panjang antrian - 1), ulangi:\n   1.1. Jika i % 2 sama dengan 0, push antrian[i] ke jalurGenap\n   1.2. Kalau enggak, push antrian[i] ke jalurGanjil\n(Function ini gak return apa-apa — hasilnya langsung nempel ke jalurGenap dan jalurGanjil yang dioper sebagai parameter)"
+        ]
+      }
+    ]
+  }
+]

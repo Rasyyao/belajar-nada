@@ -13,7 +13,9 @@ export default function Panel({
     >
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-2.5">
         <div className="flex min-w-0 items-baseline gap-2.5">
-          <h2 className="font-heading text-base leading-none text-text-1">
+          {/* Judul panel selalu satu baris; kalau tempatnya sempit, yang ngalah
+              keterangan kecil di sebelahnya (dia yang di-truncate). */}
+          <h2 className="shrink-0 font-heading text-base leading-none whitespace-nowrap text-text-1">
             {title}
           </h2>
           {hint ? (

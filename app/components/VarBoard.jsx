@@ -36,6 +36,7 @@ function Pointer({ label, tone, reserve }) {
   const tones = {
     accent: "border-accent/40 bg-accent-soft text-accent",
     worked: "border-worked/40 bg-worked-soft text-worked",
+    error: "border-error/40 bg-error-soft text-error",
   };
   return (
     <div
@@ -53,7 +54,11 @@ function Pointer({ label, tone, reserve }) {
           <span
             aria-hidden
             className={`text-[9px] leading-none ${
-              tone === "accent" ? "text-accent" : "text-worked"
+              tone === "accent"
+                ? "text-accent"
+                : tone === "error"
+                  ? "text-error"
+                  : "text-worked"
             }`}
           >
             ▼
@@ -68,8 +73,13 @@ function ArrayValue({ value, prev, reads, call }) {
   const prevArr = Array.isArray(prev) ? prev : null;
   const readByIndex = new Map(reads.map((read) => [read.index, read]));
   const showGhost = call?.method === "push";
+  // Kotak yang bakal dicabut pop()/shift() — masih kelihatan di langkah ini,
+  // baru hilang di langkah berikutnya. Ditandain biar "berkurang" gak cuma
+  // kejadian diam-diam antar langkah.
+  const leavingIndex = call && !call.adds ? call.leavingIndex : null;
   // Baris penunjuk cuma makan tempat kalau di langkah ini memang ada yang nunjuk.
-  const reservePointerRow = reads.length > 0 || showGhost;
+  const reservePointerRow =
+    reads.length > 0 || showGhost || leavingIndex !== null;
 
   if (value.length === 0 && !showGhost) {
     return (
@@ -88,24 +98,33 @@ function ArrayValue({ value, prev, reads, call }) {
           const isNew = !prevArr || index >= prevArr.length;
           const changed = isNew || !same(prevArr[index], item);
           const read = readByIndex.get(index);
+          const leaving = index === leavingIndex;
 
           return (
             <div key={index} className="shrink-0 text-center">
               <Pointer
-                label={read ? (read.detail ?? `indeks ${read.index}`) : null}
-                tone="accent"
+                label={
+                  leaving
+                    ? "keluar dari sini"
+                    : read
+                      ? (read.detail ?? `indeks ${read.index}`)
+                      : null
+                }
+                tone={leaving ? "error" : "accent"}
                 reserve={reservePointerRow}
               />
               <div
                 className={`flex h-12 min-w-12 items-center justify-center rounded-[8px] border px-2.5 font-mono text-base ${
-                  changed
-                    ? "border-worked bg-worked text-white shadow-[0_2px_8px_rgba(122,90,248,0.28)]"
-                    : read
-                      ? "border-accent bg-accent-soft text-accent font-semibold"
-                      : "border-border bg-surface text-text-1"
-                } ${changed && read ? "ring-2 ring-accent ring-offset-1" : ""}`}
+                  leaving
+                    ? "border-dashed border-error bg-error-soft font-semibold text-error line-through decoration-error/60"
+                    : changed
+                      ? "border-worked bg-worked text-white shadow-[0_2px_8px_rgba(122,90,248,0.28)]"
+                      : read
+                        ? "border-accent bg-accent-soft text-accent font-semibold"
+                        : "border-border bg-surface text-text-1"
+                } ${changed && read && !leaving ? "ring-2 ring-accent ring-offset-1" : ""}`}
               >
-                {changed ? (
+                {leaving || changed ? (
                   inlineText(item)
                 ) : typeof item === "object" && item !== null ? (
                   JSON.stringify(item)
@@ -115,7 +134,11 @@ function ArrayValue({ value, prev, reads, call }) {
               </div>
               <div
                 className={`mt-1 font-mono text-[10px] tabular-nums ${
-                  read ? "font-semibold text-accent" : "text-text-2"
+                  leaving
+                    ? "font-semibold text-error"
+                    : read
+                      ? "font-semibold text-accent"
+                      : "text-text-2"
                 }`}
               >
                 {index}
@@ -181,6 +204,17 @@ function VarCard({ name, value, prev, isNew, reads, call, pointsTo }) {
       ? "object"
       : typeof value;
 
+  // Buat array, bilang isinya NAMBAH atau BERKURANG — bukan cuma "berubah".
+  // Bedanya penting di soal yang push dan pop-nya campur dalam satu loop.
+  const delta =
+    isArray && Array.isArray(prev) ? value.length - prev.length : 0;
+  const changeLabel =
+    delta > 0
+      ? `+${delta} masuk`
+      : delta < 0
+        ? `${delta} keluar`
+        : "berubah di sini";
+
   // Array panjang (dan object) butuh lebar penuh — kalau dipaksa setengah kolom,
   // kotak-kotaknya kepotong dan malah harus di-scroll pas lagi ngajar.
   // Isi berupa teks (misal ["Kenari", "Almond", "Kastanye"]) makan tempat jauh
@@ -222,8 +256,12 @@ function VarCard({ name, value, prev, isNew, reads, call, pointsTo }) {
           </span>
         )}
         {changed && (
-          <span className="ml-auto shrink-0 text-[11px] font-medium text-worked">
-            {isNew ? "baru muncul" : "berubah di sini"}
+          <span
+            className={`ml-auto shrink-0 text-[11px] font-medium ${
+              delta < 0 ? "text-error" : "text-worked"
+            }`}
+          >
+            {isNew ? "baru muncul" : changeLabel}
           </span>
         )}
       </div>

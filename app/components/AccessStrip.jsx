@@ -90,6 +90,12 @@ export default function AccessStrip({ access }) {
               masuk ke kotak {call.nextIndex}
             </span>
           )}
+          {call.leavingIndex !== null && call.leavingIndex !== undefined && (
+            <span className="font-mono text-xs text-text-2">
+              keluar dari kotak {call.leavingIndex} ·{" "}
+              {formatValue(call.leavingValue)}
+            </span>
+          )}
         </Row>
       ))}
 
