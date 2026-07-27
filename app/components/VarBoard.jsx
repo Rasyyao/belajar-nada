@@ -69,7 +69,7 @@ function Pointer({ label, tone, reserve }) {
   );
 }
 
-function ArrayValue({ value, prev, reads, call }) {
+function ArrayValue({ value, prev, reads, call, stepKey }) {
   const prevArr = Array.isArray(prev) ? prev : null;
   const readByIndex = new Map(reads.map((read) => [read.index, read]));
   const showGhost = call?.method === "push";
@@ -113,8 +113,14 @@ function ArrayValue({ value, prev, reads, call }) {
                 tone={leaving ? "error" : "accent"}
                 reserve={reservePointerRow}
               />
+              {/* `key` ikut nomor langkah supaya kotaknya mount ulang tiap
+                  langkah — itu satu-satunya cara CSS animation-nya main lagi,
+                  bukan cuma sekali pas pertama kali kerender. */}
               <div
+                key={`${stepKey}-${isNew ? "in" : leaving ? "out" : "tetap"}`}
                 className={`flex h-12 min-w-12 items-center justify-center rounded-[8px] border px-2.5 font-mono text-base ${
+                  isNew ? "anim-slot-in" : leaving ? "anim-slot-out" : ""
+                } ${
                   leaving
                     ? "border-dashed border-error bg-error-soft font-semibold text-error line-through decoration-error/60"
                     : changed
@@ -151,7 +157,10 @@ function ArrayValue({ value, prev, reads, call }) {
         {showGhost && (
           <div className="shrink-0 text-center">
             <Pointer label="masuk sini" tone="worked" reserve />
-            <div className="flex h-12 min-w-12 items-center justify-center rounded-[8px] border border-dashed border-worked/60 px-2.5 font-mono text-base text-worked/70">
+            <div
+              key={`ghost-${stepKey}`}
+              className="anim-slot-in flex h-12 min-w-12 items-center justify-center rounded-[8px] border border-dashed border-worked/60 px-2.5 font-mono text-base text-worked/70"
+            >
               +
             </div>
             <div className="mt-1 font-mono text-[10px] font-semibold text-worked tabular-nums">
@@ -192,8 +201,7 @@ function ObjectValue({ value }) {
   );
 }
 
-function VarCard({ name, value, prev, isNew, reads, call, pointsTo }) {
-  const changed = isNew || !same(value, prev);
+function VarCard({ name, value, prev, isNew, changed, reads, call, pointsTo, stepKey }) {
   const isArray = Array.isArray(value);
   const isObject = !isArray && typeof value === "object" && value !== null;
   const touched = reads.length > 0 || !!call || pointsTo.length > 0;
@@ -229,7 +237,7 @@ function VarCard({ name, value, prev, isNew, reads, call, pointsTo }) {
     <div
       className={`relative overflow-hidden rounded-app border px-4 py-3 transition-colors ${
         needsFullWidth ? "md:col-span-2 xl:col-span-1 2xl:col-span-2" : ""
-      } ${
+      } ${changed ? "anim-var-pulse" : ""} ${
         changed
           ? "border-worked/40 bg-worked-soft"
           : touched
@@ -267,7 +275,13 @@ function VarCard({ name, value, prev, isNew, reads, call, pointsTo }) {
       </div>
 
       {isArray ? (
-        <ArrayValue value={value} prev={prev} reads={reads} call={call} />
+        <ArrayValue
+          value={value}
+          prev={prev}
+          reads={reads}
+          call={call}
+          stepKey={stepKey}
+        />
       ) : isObject ? (
         <ObjectValue value={value} />
       ) : (
@@ -300,7 +314,7 @@ function VarCard({ name, value, prev, isNew, reads, call, pointsTo }) {
  * `order` bikin posisi kartu tetap sepanjang eksekusi, jadi mata gak perlu
  * nyari ulang tiap kali maju satu langkah.
  */
-export default function VarBoard({ vars, prevVars, order, access }) {
+export default function VarBoard({ vars, prevVars, order, access, stepKey }) {
   const names = order.filter((name) => name in vars);
   const readsByName = groupReadsByName(access.reads);
   const indexUsers = indexUsage(access.reads);
@@ -315,18 +329,29 @@ export default function VarBoard({ vars, prevVars, order, access }) {
 
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-      {names.map((name) => (
-        <VarCard
-          key={name}
-          name={name}
-          value={vars[name]}
-          prev={prevVars ? prevVars[name] : undefined}
-          isNew={!prevVars || !(name in prevVars)}
-          reads={readsByName.get(name) ?? []}
-          call={access.calls.find((item) => item.name === name) ?? null}
-          pointsTo={indexUsers.get(name) ?? []}
-        />
-      ))}
+      {names.map((name) => {
+        const prev = prevVars ? prevVars[name] : undefined;
+        const isNew = !prevVars || !(name in prevVars);
+        const changed = isNew || !same(vars[name], prev);
+
+        return (
+          <VarCard
+            // Kartu yang isinya berubah dikasih `key` yang ikut nomor langkah
+            // supaya mount ulang dan pulse-nya main lagi. Kartu yang diam
+            // key-nya tetap — posisinya gak boleh goyang tiap ganti langkah.
+            key={changed ? `${name}-${stepKey}` : name}
+            name={name}
+            value={vars[name]}
+            prev={prev}
+            isNew={isNew}
+            changed={changed}
+            reads={readsByName.get(name) ?? []}
+            call={access.calls.find((item) => item.name === name) ?? null}
+            pointsTo={indexUsers.get(name) ?? []}
+            stepKey={stepKey}
+          />
+        );
+      })}
     </div>
   );
 }

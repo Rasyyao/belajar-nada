@@ -1,16 +1,16 @@
 import Link from "next/link";
-import {
-  getMiniProjects,
-  getPartProjects,
-  partTheme,
-  SEASONS,
-} from "../lib/projects";
+import { getAllProjects } from "../lib/projects";
+import { partTheme, SEASONS } from "../lib/themes";
 
 export const metadata = {
   title: "Mini Project — Playground Belajar",
   description:
     "Kumpulan mini project: program utuh yang minta input, dijalankan step-by-step.",
 };
+
+// Soalnya sekarang bisa ditambah lewat /admin kapan aja. Halaman ini dirender
+// per request supaya soal baru langsung kelihatan tanpa build ulang.
+export const dynamic = "force-dynamic";
 
 function Badge({ children }) {
   return (
@@ -54,10 +54,11 @@ function ProjectCard({ href, badge, meta, judul, cerita, children }) {
 }
 
 export default async function MiniProjectList() {
-  const [projects, partProjects] = await Promise.all([
-    getMiniProjects(),
-    getPartProjects(),
-  ]);
+  // Satu query buat dua jenis soal, dipisah di sini — supaya urutan `urutan`
+  // dari database kejaga di dalam masing-masing kelompok.
+  const all = await getAllProjects();
+  const projects = all.filter((project) => project.tipe === "mini");
+  const partProjects = all.filter((project) => project.tipe === "berpart");
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 px-4 py-6">
@@ -71,12 +72,20 @@ export default async function MiniProjectList() {
             bertahap di satu halaman.
           </p>
         </div>
-        <Link
-          href="/"
-          className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-        >
-          ← Playground
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/materi"
+            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+          >
+            Materi
+          </Link>
+          <Link
+            href="/"
+            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+          >
+            ← Playground
+          </Link>
+        </div>
       </header>
 
       <ol className="grid gap-4 md:grid-cols-2">
@@ -143,11 +152,15 @@ export default async function MiniProjectList() {
         })}
       </ol>
 
-      <p className="text-xs text-text-2">
-        Materi masih dibaca dari{" "}
-        <code className="font-mono">app/data/mini-projects.json</code> dan{" "}
-        <code className="font-mono">app/data/part-projects.json</code>.
-      </p>
+      {all.length === 0 && (
+        <p className="rounded-app border border-dashed border-border px-6 py-12 text-center text-sm text-text-2">
+          Belum ada soal sama sekali. Tambahin lewat{" "}
+          <Link href="/admin" className="font-semibold text-accent">
+            halaman admin
+          </Link>
+          .
+        </p>
+      )}
     </div>
   );
 }

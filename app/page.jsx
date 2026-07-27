@@ -129,6 +129,12 @@ export default function Playground() {
           >
             Mini project
           </Link>
+          <Link
+            href="/materi"
+            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+          >
+            Materi
+          </Link>
           <button
             type="button"
             onClick={handleShare}
@@ -235,6 +241,7 @@ export default function Playground() {
                 varOrder={varOrder}
                 logs={logs}
                 showAllLogs={player.atEnd}
+                stepKey={player.current}
               />
             )}
           </div>

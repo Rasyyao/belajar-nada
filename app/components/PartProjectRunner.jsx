@@ -14,7 +14,7 @@ import ResultCheck, { matchesExpected } from "./ResultCheck";
 import StepView, { buildVarOrder } from "./StepView";
 import Transport from "./Transport";
 import { es5ify, runCode } from "../lib/interpreter";
-import { partTheme } from "../lib/projects";
+import { partTheme } from "../lib/themes";
 import { useStepPlayer } from "../lib/useStepPlayer";
 
 const NO_STEPS = [];
@@ -114,7 +114,11 @@ export default function PartProjectRunner({ project, nextProject }) {
       // Soal berpart gak minta input lewat ambilInput() — data awalnya udah
       // ketulis di kode, jadi gak ada daftar input yang perlu disuapin.
       const next = await runCode(code);
-      setResults((list) => replaceAt(list, active, { ...next, ranCode: code }));
+      // `runId` = penanda run ke berapa, dipakai sebagai `key` panel hasil biar
+      // animasi "cocok!" main lagi tiap dijalanin.
+      setResults((list) =>
+        replaceAt(list, active, { ...next, ranCode: code, runId: Date.now() }),
+      );
       resetPlayer();
     } finally {
       setRunning(false);
@@ -402,9 +406,11 @@ export default function PartProjectRunner({ project, nextProject }) {
           </div>
         </Panel>
 
-        {/* Kolom kanan: apa yang terjadi di langkah ini. */}
+        {/* Kolom kanan: apa yang terjadi di langkah ini. Ikonnya ngikut
+            `visualTheme` soal — identitas visual per cerita, biar panel ini
+            gak kelihatan sama persis di semua soal. */}
         <Panel
-          title="Visualisasi"
+          title={`${theme.emoji} Visualisasi`}
           hint={
             steps.length > 0
               ? `langkah ${player.current + 1} dari ${steps.length}`
@@ -453,10 +459,12 @@ export default function PartProjectRunner({ project, nextProject }) {
                   varOrder={varOrder}
                   logs={logs}
                   showAllLogs={player.atEnd}
+                  stepKey={player.current}
                   compare={part.bandingkan}
                 />
 
                 <ResultCheck
+                  key={result.runId}
                   expected={part.hasilAkhirTervalidasi}
                   lastStep={player.lastStep}
                 />

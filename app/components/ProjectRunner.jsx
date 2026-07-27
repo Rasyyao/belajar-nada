@@ -14,7 +14,7 @@ import ResultCheck from "./ResultCheck";
 import StepView, { buildVarOrder } from "./StepView";
 import Transport from "./Transport";
 import { es5ify, runCode } from "../lib/interpreter";
-import { SEASONS } from "../lib/projects";
+import { SEASONS, themeIcon } from "../lib/themes";
 import { useStepPlayer } from "../lib/useStepPlayer";
 
 const NO_STEPS = [];
@@ -59,8 +59,10 @@ export default function ProjectRunner({ project, nextProject }) {
     try {
       const next = await runCode(code, { inputs });
       // Simpan kode & input yang dipakai, biar bisa dibilang kalau hasil yang
-      // ditampilkan udah gak nyambung sama isi editor sekarang.
-      setResult({ ...next, ranCode: code, ranInputs: inputs });
+      // ditampilkan udah gak nyambung sama isi editor sekarang. `runId` cuma
+      // penanda run ke berapa — dipakai sebagai `key` panel hasil supaya
+      // animasi "cocok!" main lagi tiap kali dijalanin, bukan sekali doang.
+      setResult({ ...next, ranCode: code, ranInputs: inputs, runId: Date.now() });
       resetPlayer();
     } finally {
       setRunning(false);
@@ -111,6 +113,9 @@ export default function ProjectRunner({ project, nextProject }) {
   }, [hints.length]);
 
   const season = SEASONS[project.musim];
+  // Ikon panel visualisasi ngikut `visualTheme` soal — identitas visual per
+  // cerita, biar panelnya gak kelihatan sama persis di semua soal.
+  const ikon = themeIcon(project.visualTheme);
   const codeIsStarter = code === project.starterCode;
   const inputsAreDefault = sameInputs(inputs, project.inputs);
   const stale =
@@ -288,7 +293,7 @@ export default function ProjectRunner({ project, nextProject }) {
 
         {/* Kolom kanan: apa yang terjadi di langkah ini. */}
         <Panel
-          title="Visualisasi"
+          title={`${ikon} Visualisasi`}
           hint={
             steps.length > 0
               ? `langkah ${player.current + 1} dari ${steps.length}`
@@ -348,9 +353,11 @@ export default function ProjectRunner({ project, nextProject }) {
                   varOrder={varOrder}
                   logs={logs}
                   showAllLogs={player.atEnd}
+                  stepKey={player.current}
                 />
 
                 <ResultCheck
+                  key={result.runId}
                   expected={project.hasilAkhirTervalidasi}
                   lastStep={player.lastStep}
                 />

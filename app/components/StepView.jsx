@@ -21,6 +21,9 @@ export default function StepView({
   logs = NO_LOGS,
   showAllLogs = false,
   compare = null,
+  // Nomor langkah yang lagi ditampilin. Dipakai VarBoard sebagai bagian dari
+  // `key` biar animasi "baru masuk" / "bakal keluar" main ulang tiap langkah.
+  stepKey = 0,
 }) {
   const activeLine = step ? step.line : null;
   const activeSource = activeLine ? (codeLines[activeLine - 1] ?? "") : "";
@@ -68,6 +71,7 @@ export default function StepView({
         prevVars={prevStep ? prevStep.vars : null}
         order={varOrder}
         access={access}
+        stepKey={stepKey}
       />
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-text-2">

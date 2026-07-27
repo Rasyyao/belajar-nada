@@ -24,6 +24,42 @@ export function matchesExpected(expected, lastStep) {
 }
 
 /**
+ * Konfeti seadanya: beberapa kepingan kecil yang jatuh sekali terus ilang.
+ *
+ * Digambar pakai div biasa dan `pointer-events-none` — gak nambah library, gak
+ * ngalangin klik apa pun di bawahnya. Sengaja cuma 9 keping dan kelar dalam
+ * di bawah 1 detik: ini tepuk tangan sebentar, bukan pertunjukan.
+ */
+const CONFETTI = [
+  { left: "8%", delay: "0ms", color: "bg-success" },
+  { left: "18%", delay: "90ms", color: "bg-accent" },
+  { left: "29%", delay: "40ms", color: "bg-worked" },
+  { left: "41%", delay: "150ms", color: "bg-success" },
+  { left: "53%", delay: "20ms", color: "bg-hint" },
+  { left: "64%", delay: "120ms", color: "bg-accent" },
+  { left: "75%", delay: "70ms", color: "bg-worked" },
+  { left: "85%", delay: "170ms", color: "bg-success" },
+  { left: "93%", delay: "50ms", color: "bg-hint" },
+];
+
+function Confetti() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 top-0 h-0 overflow-visible"
+    >
+      {CONFETTI.map((piece) => (
+        <span
+          key={piece.left}
+          style={{ left: piece.left, animationDelay: piece.delay }}
+          className={`anim-confetti absolute top-0 size-1.5 rounded-[2px] ${piece.color}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
  * Bandingin nilai akhir variabel dengan hasil yang sudah divalidasi di data.
  * Ini alat bantu ngajar buat jawab "kodeku udah bener belum?" — bukan penilai
  * otomatis, jadi nilai yang diharapkan sengaja ditampilin apa adanya.
@@ -38,19 +74,26 @@ export default function ResultCheck({ expected, lastStep }) {
 
   return (
     <div
-      className={`rounded-app border px-4 py-3 ${
+      className={`relative rounded-app border px-4 py-3 ${
         allMatch ? "border-success/40 bg-success-soft" : "border-border bg-surface"
       }`}
     >
+      {/* Animasi cuma main pas komponennya baru muncul — dan komponen ini
+          kerender ulang tiap kali kode dijalanin, jadi hadiahnya keluar sekali
+          per run yang berhasil, bukan tiap kali langkahnya digeser. */}
+      {allMatch && <Confetti />}
+
       <div className="mb-2.5 flex items-baseline gap-2">
         <h3 className="font-heading text-base text-text-1">Cek hasil akhir</h3>
-        <span
-          className={`text-[11px] font-semibold ${
-            allMatch ? "text-success" : "text-text-2"
-          }`}
-        >
-          {allMatch ? "semua cocok" : "belum cocok semua"}
-        </span>
+        {allMatch ? (
+          <span className="anim-badge-pop inline-flex items-center gap-1 rounded-full bg-success px-2.5 py-0.5 text-[11px] font-semibold text-white">
+            ✓ Cocok!
+          </span>
+        ) : (
+          <span className="text-[11px] font-semibold text-text-2">
+            belum cocok semua
+          </span>
+        )}
       </div>
 
       <table className="w-full text-left">

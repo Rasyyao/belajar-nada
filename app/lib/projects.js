@@ -1,53 +1,190 @@
-import miniProjects from "../data/mini-projects.json";
-import partProjects from "../data/part-projects.json";
+import miniProjectsJson from "../data/mini-projects.json";
+import partProjectsJson from "../data/part-projects.json";
+import { isSupabaseConfigured, supabasePublic } from "./supabase";
 
 /**
  * Satu-satunya pintu ke materi soal.
  *
- * Sekarang sumbernya masih file JSON statis (`app/data/*.json`).
- * Semua halaman WAJIB lewat function di file ini — jadi pas nanti pindah ke
- * database, yang diganti cuma isi function di sini, bukan halaman-halamannya.
- * Sengaja sudah `async` dari sekarang biar call site-nya gak perlu diubah.
+ * Sumbernya sekarang tabel `cases` + `parts` di Supabase. Halaman-halaman
+ * memanggil function di file ini, gak pernah nyentuh Supabase langsung — jadi
+ * bentuk data yang dipakai runner tetap sama persis kayak waktu masih JSON.
  *
- * Ada DUA skema soal yang hidup berdampingan:
- * - mini project (`mini-projects.json`): satu soal = satu halaman, berdiri sendiri.
- * - soal berpart (`part-projects.json`): satu soal = beberapa part yang dikerjain
- *   berurutan di HALAMAN YANG SAMA lewat tab.
- * Keduanya dipisah karena bentuk datanya beda; yang nyatuin cuma id-nya harus
- * unik lintas dua file, karena route detailnya sama (`/mini-project/[id]`).
+ * Ada DUA skema soal yang hidup berdampingan, dibedain kolom `tipe`:
+ * - `mini`    : satu soal = satu halaman, programnya minta input lewat ambilInput().
+ * - `berpart` : satu soal = beberapa part yang dikerjain berurutan lewat tab.
+ * Keduanya disimpen di tabel yang sama; yang beda cuma kolom mana yang keisi.
+ *
+ * `slug` di database = `id` yang dipakai di URL dan di kode runner.
+ *
+ * FALLBACK ke file JSON bawaan (`app/data/*.json`) kejadian di DUA keadaan, dan
+ * cuma dua ini:
+ *   1. Env Supabase belum diisi sama sekali.
+ *   2. Env-nya udah keisi tapi tabelnya belum dibikin (`supabase/schema.sql`
+ *      belum dijalanin) — PostgREST balikin PGRST205.
+ * Dua-duanya artinya "databasenya memang belum disiapin", bukan "databasenya
+ * lagi bermasalah". Error lain (jaringan, key salah, kolom gak ada) tetap
+ * dilempar apa adanya — kalau itu ikut jatuh ke JSON, data basi bakal kelihatan
+ * seperti data beneran dan soal yang barusan diedit seolah-olah gak kesimpen.
  */
 
-export async function getMiniProjects() {
-  return miniProjects;
+/** PGRST205 = tabelnya gak ada di schema cache, alias belum pernah dibikin. */
+const SCHEMA_BELUM_ADA = "PGRST205";
+
+function schemaBelumAda(error) {
+  return error?.code === SCHEMA_BELUM_ADA;
 }
 
-export async function getMiniProject(id) {
-  return miniProjects.find((project) => project.id === id) ?? null;
+/** Isi `app/data/*.json`, dalam bentuk yang sama kayak hasil dari database. */
+function projectsDariJson() {
+  return [
+    ...miniProjectsJson.map((p) => ({ ...p, tipe: "mini" })),
+    ...partProjectsJson.map((p) => ({ ...p, tipe: "berpart" })),
+  ];
+}
+
+const CASE_COLUMNS = "id, slug, judul, cerita_utama, visual_theme, tipe, musim, urutan";
+const PART_COLUMNS =
+  "part_ke, judul_part, tema, cerita, deskripsi_soal, nama_function, starter_code, input_awal, hasil_akhir_tervalidasi, alur_data, catatan_konsep, hints, inputs, prompt_labels, bandingkan";
+
+/** Baris `parts` → bentuk part yang dibaca PartProjectRunner. */
+function toPart(row) {
+  return {
+    partKe: row.part_ke,
+    judulPart: row.judul_part,
+    tema: row.tema,
+    cerita: row.cerita,
+    deskripsiSoal: row.deskripsi_soal,
+    namaFunction: row.nama_function,
+    starterCode: row.starter_code,
+    inputAwal: row.input_awal ?? {},
+    hasilAkhirTervalidasi: row.hasil_akhir_tervalidasi ?? {},
+    alurData: row.alur_data ?? null,
+    catatanKonsep: row.catatan_konsep ?? [],
+    hints: row.hints ?? [],
+    bandingkan: row.bandingkan ?? undefined,
+    // Dua ini cuma kepakai kalau case-nya bertipe `mini` — di soal berpart
+    // nilainya null dan diabaikan.
+    inputs: row.inputs ?? [],
+    promptLabels: row.prompt_labels ?? [],
+  };
+}
+
+/**
+ * Baris `cases` (+ parts-nya) → bentuk project yang dibaca runner.
+ *
+ * Mini project diratakan: satu-satunya part-nya dilebur ke level atas, karena
+ * ProjectRunner emang gak kenal konsep part sama sekali.
+ */
+function toProject(row) {
+  const parts = [...(row.parts ?? [])]
+    .sort((a, b) => a.part_ke - b.part_ke)
+    .map(toPart);
+
+  if (row.tipe === "mini") {
+    const part = parts[0];
+    if (!part) return null; // case mini tanpa part = data setengah jadi, sembunyiin
+    return {
+      tipe: "mini",
+      id: row.slug,
+      judul: row.judul,
+      tema: part.tema,
+      musim: row.musim,
+      cerita: row.cerita_utama ?? part.cerita,
+      visualTheme: row.visual_theme,
+      deskripsiSoal: part.deskripsiSoal,
+      starterCode: part.starterCode,
+      inputs: part.inputs ?? [],
+      promptLabels: part.promptLabels ?? [],
+      hasilAkhirTervalidasi: part.hasilAkhirTervalidasi,
+      alurData: part.alurData,
+      catatanKonsep: part.catatanKonsep,
+      hints: part.hints,
+    };
+  }
+
+  if (parts.length === 0) return null;
+
+  return {
+    tipe: "berpart",
+    id: row.slug,
+    judul: row.judul,
+    ceritaUtama: row.cerita_utama,
+    visualTheme: row.visual_theme,
+    parts,
+  };
+}
+
+/** Semua soal, sudah dalam bentuk yang siap dipakai runner. */
+export async function getAllProjects() {
+  if (!isSupabaseConfigured()) return projectsDariJson();
+
+  const { data, error } = await supabasePublic()
+    .from("cases")
+    .select(`${CASE_COLUMNS}, parts(${PART_COLUMNS})`)
+    .order("urutan", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (schemaBelumAda(error)) return projectsDariJson();
+  if (error) throw new Error(`Gagal ambil daftar soal dari Supabase: ${error.message}`);
+
+  return (data ?? []).map(toProject).filter(Boolean);
+}
+
+export async function getMiniProjects() {
+  const all = await getAllProjects();
+  return all.filter((project) => project.tipe === "mini");
 }
 
 export async function getPartProjects() {
-  return partProjects;
+  const all = await getAllProjects();
+  return all.filter((project) => project.tipe === "berpart");
 }
 
-export async function getPartProject(id) {
-  return partProjects.find((project) => project.id === id) ?? null;
+/**
+ * Satu soal berdasarkan slug — dipakai halaman detail.
+ * Balikin `null` kalau gak ketemu, biar pemanggilnya yang mutusin `notFound()`.
+ */
+export async function getProject(slug) {
+  if (!isSupabaseConfigured()) {
+    return projectsDariJson().find((project) => project.id === slug) ?? null;
+  }
+
+  const { data, error } = await supabasePublic()
+    .from("cases")
+    .select(`${CASE_COLUMNS}, parts(${PART_COLUMNS})`)
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (schemaBelumAda(error)) {
+    return projectsDariJson().find((project) => project.id === slug) ?? null;
+  }
+  if (error) throw new Error(`Gagal ambil soal "${slug}": ${error.message}`);
+  if (!data) return null;
+  return toProject(data);
 }
 
 /**
  * Urutan semua soal buat navigasi "lanjut ke soal berikutnya".
- * Mini project duluan (ceritanya nyambung), baru soal berpart.
+ * Query-nya ringan (gak ikut narik parts) karena yang dibutuhin cuma judul.
  */
 export async function getProjectSequence() {
-  return [
-    ...miniProjects.map((project) => ({
+  const dariJson = () =>
+    projectsDariJson().map((project) => ({
       id: project.id,
       judul: project.judul,
-    })),
-    ...partProjects.map((project) => ({
-      id: project.id,
-      judul: project.judul,
-    })),
-  ];
+    }));
+
+  if (!isSupabaseConfigured()) return dariJson();
+
+  const { data, error } = await supabasePublic()
+    .from("cases")
+    .select("slug, judul, urutan, created_at")
+    .order("urutan", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (schemaBelumAda(error)) return dariJson();
+  if (error) throw new Error(`Gagal ambil urutan soal: ${error.message}`);
+  return (data ?? []).map((row) => ({ id: row.slug, judul: row.judul }));
 }
 
 export async function getNextProject(id) {
@@ -55,27 +192,4 @@ export async function getNextProject(id) {
   const index = sequence.findIndex((item) => item.id === id);
   if (index < 0) return null;
   return sequence[index + 1] ?? null;
-}
-
-/** Label musim buat badge di kartu — dipakai halaman daftar & detail. */
-export const SEASONS = {
-  gugur: { label: "Gugur", emoji: "🍂" },
-  dingin: { label: "Dingin", emoji: "❄️" },
-};
-
-/**
- * Wajah tiap soal berpart di badge, dikunci ke `visualTheme` di JSON-nya.
- * Dipisah dari data soal karena ini murni urusan tampilan — dan ditaruh di sini
- * (bukan ditulis langsung di halaman) supaya halaman daftar dan halaman detail
- * gak bisa beda sendiri-sendiri pas ada kasus baru masuk.
- */
-const PART_THEMES = {
-  "taman-bermain": { emoji: "🛝", tema: "push + pop" },
-  "loket-tiket": { emoji: "🎟️", tema: "if-else + akumulasi" },
-};
-
-const THEME_FALLBACK = { emoji: "🧩", tema: "array" };
-
-export function partTheme(visualTheme) {
-  return PART_THEMES[visualTheme] ?? THEME_FALLBACK;
 }
