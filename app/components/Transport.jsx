@@ -17,10 +17,50 @@ function TransportButton({ children, label, ...props }) {
   );
 }
 
-/** Kontrol pemutaran langkah — dipatok di bawah halaman biar selalu kejangkau. */
-export default function Transport({ player, steps, totalLines, idleHint }) {
+/** Kontrol pemutaran langkah. `embedded` dipakai di kartu visualisasi soal. */
+export default function Transport({
+  player,
+  steps,
+  totalLines,
+  idleHint,
+  embedded = false,
+}) {
   const { current, atEnd, isPlaying, speed, setSpeed, seek, togglePlay } =
     player;
+
+  if (embedded) {
+    if (steps.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+        <TransportButton
+          label="Mundur satu langkah"
+          onClick={() => seek(Math.max(current - 1, 0))}
+          disabled={current === 0}
+        >
+          ←
+        </TransportButton>
+        <button
+          type="button"
+          onClick={togglePlay}
+          aria-label={isPlaying ? "Jeda" : atEnd ? "Putar ulang" : "Putar"}
+          className="flex h-10 min-w-24 items-center justify-center gap-2 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90"
+        >
+          {isPlaying ? "⏸ Jeda" : atEnd ? "↻ Ulangi" : "▶ Putar"}
+        </button>
+        <TransportButton
+          label="Maju satu langkah"
+          onClick={() => seek(Math.min(current + 1, steps.length - 1))}
+          disabled={atEnd}
+        >
+          →
+        </TransportButton>
+        <span className="ml-auto font-mono text-xs text-text-2 tabular-nums">
+          langkah {current + 1} / {steps.length}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <footer className="sticky bottom-0 shrink-0 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur">
@@ -73,11 +113,10 @@ export default function Transport({ player, steps, totalLines, idleHint }) {
                 key={option.label}
                 type="button"
                 onClick={() => setSpeed(option.ms)}
-                className={`h-8 rounded-[7px] px-2.5 font-mono text-xs transition-colors ${
-                  speed === option.ms
+                className={`h-8 rounded-[7px] px-2.5 font-mono text-xs transition-colors ${speed === option.ms
                     ? "bg-accent-soft font-semibold text-accent"
                     : "text-text-2 hover:text-text-1"
-                }`}
+                  }`}
               >
                 {option.label}
               </button>

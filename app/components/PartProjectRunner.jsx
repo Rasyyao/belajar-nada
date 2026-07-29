@@ -85,6 +85,7 @@ export default function PartProjectRunner({ project, nextProject }) {
   const [hintLevels, setHintLevels] = useState(() => parts.map(() => 0));
   const [notes, setNotes] = useState(() => parts.map(() => ""));
   const [running, setRunning] = useState(false);
+  const [visualizing, setVisualizing] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
 
@@ -97,6 +98,7 @@ export default function PartProjectRunner({ project, nextProject }) {
   const steps = result ? result.steps : NO_STEPS;
   const logs = result ? result.logs : NO_LOGS;
   const error = result ? result.error : null;
+  const stale = result !== null && result.ranCode !== code;
 
   const player = useStepPlayer(steps);
   const resetPlayer = player.reset;
@@ -108,7 +110,7 @@ export default function PartProjectRunner({ project, nextProject }) {
     [parts, active],
   );
 
-  const handleRun = useCallback(async () => {
+  const executeCode = useCallback(async () => {
     setRunning(true);
     try {
       // Soal berpart gak minta input lewat ambilInput() — data awalnya udah
@@ -120,21 +122,32 @@ export default function PartProjectRunner({ project, nextProject }) {
         replaceAt(list, active, { ...next, ranCode: code, runId: Date.now() }),
       );
       resetPlayer();
+      return next;
     } finally {
       setRunning(false);
     }
   }, [active, code, resetPlayer]);
 
+  const handleCheck = useCallback(async () => {
+    setVisualizing(false);
+    await executeCode();
+  }, [executeCode]);
+
+  const handleVisualize = useCallback(async () => {
+    setVisualizing(true);
+    if (result === null || stale) await executeCode();
+  }, [executeCode, result, stale]);
+
   useEffect(() => {
     const onKeyDown = (event) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
         event.preventDefault();
-        handleRun();
+        handleCheck();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleRun]);
+  }, [handleCheck]);
 
   // Pindah tab: popup ditutup dan langkahnya balik ke awal, tapi kode dan hasil
   // run tiap part tetap kesimpen di state di atas.
@@ -143,6 +156,7 @@ export default function PartProjectRunner({ project, nextProject }) {
       setActive(index);
       setHintOpen(false);
       setNotesOpen(false);
+      setVisualizing(false);
       resetPlayer();
     },
     [resetPlayer],
@@ -201,7 +215,10 @@ export default function PartProjectRunner({ project, nextProject }) {
   });
 
   const codeIsStarter = code === part.starterCode;
-  const stale = result !== null && result.ranCode !== code;
+  const updateCode = useCallback((value) => {
+    setVisualizing(false);
+    setCode(value);
+  }, [setCode]);
 
   return (
     <div className="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
@@ -342,9 +359,11 @@ export default function PartProjectRunner({ project, nextProject }) {
             </div>
           </Panel>
 
-          <Panel title="Data awal" className="shrink-0 xl:max-h-[62%]">
-            <InitialData data={part.inputAwal} origins={inputOrigins} />
-          </Panel>
+          {!visualizing && (
+            <Panel title="Data awal" className="shrink-0 xl:max-h-[62%]">
+              <InitialData data={part.inputAwal} origins={inputOrigins} />
+            </Panel>
+          )}
         </div>
 
         {/* Kolom tengah: kode part yang lagi kebuka. */}
@@ -379,11 +398,19 @@ export default function PartProjectRunner({ project, nextProject }) {
               )}
               <button
                 type="button"
-                onClick={handleRun}
+                onClick={handleCheck}
                 disabled={running}
+                className="flex h-9 items-center rounded-[10px] border border-success/40 bg-success-soft px-3.5 text-sm font-semibold text-success transition-colors hover:bg-success/15 disabled:opacity-60"
+              >
+                {running ? "Mengecek…" : "Cek kode"}
+              </button>
+              <button
+                type="button"
+                onClick={handleVisualize}
+                disabled={running || !result || stale}
                 className="flex h-9 items-center gap-2 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-60"
               >
-                {running ? "Menjalankan…" : "Jalankan & Visualisasikan"}
+                {running ? "Menyiapkan…" : "Jalankan visualisasi"}
                 <kbd className="hidden rounded bg-white/20 px-1.5 py-0.5 font-mono text-[10px] font-normal 2xl:inline">
                   ⌘↵
                 </kbd>
@@ -397,9 +424,9 @@ export default function PartProjectRunner({ project, nextProject }) {
             <CodeEditor
               key={part.partKe}
               value={code}
-              onChange={setCode}
+              onChange={updateCode}
               activeLine={player.step ? player.step.line : null}
-              onRun={handleRun}
+              onRun={handleCheck}
             />
           </div>
         </Panel>
@@ -419,11 +446,13 @@ export default function PartProjectRunner({ project, nextProject }) {
           <div
             className={`flex flex-col gap-4 ${steps.length === 0 ? "min-h-full" : ""}`}
           >
-            <ExpectedResult
-              expected={part.hasilAkhirTervalidasi}
-              inputExample={part.inputAwal}
-              starterCode={part.starterCode}
-            />
+            {!visualizing && (
+              <ExpectedResult
+                expected={part.hasilAkhirTervalidasi}
+                inputExample={part.inputAwal}
+                starterCode={part.starterCode}
+              />
+            )}
 
             {stale && (
               <p className="rounded-app border border-border bg-bg px-3 py-2 text-[12px] text-text-2">
@@ -438,21 +467,7 @@ export default function PartProjectRunner({ project, nextProject }) {
               onFixLetConst={() => setCode(es5ify(code))}
             />
 
-            {steps.length === 0 ? (
-              <div className="my-auto rounded-app border border-dashed border-border px-6 py-12 text-center">
-                <p className="font-heading text-lg text-text-1">
-                  Siap dijalankan
-                </p>
-                <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-text-2">
-                  Data awal Part {part.partKe} udah ditulis langsung di kode,
-                  jadi program ini gak nanya apa-apa dulu. Klik{" "}
-                  <strong className="text-text-1">
-                    Jalankan &amp; Visualisasikan
-                  </strong>{" "}
-                  buat lihat jalannya.
-                </p>
-              </div>
-            ) : (
+            {visualizing && steps.length > 0 ? (
               <>
                 <StepView
                   step={player.step}
@@ -470,18 +485,51 @@ export default function PartProjectRunner({ project, nextProject }) {
                   expected={part.hasilAkhirTervalidasi}
                   lastStep={player.lastStep}
                 />
+
+                <Transport
+                  embedded
+                  player={player}
+                  steps={steps}
+                  totalLines={codeLines.length}
+                />
               </>
+            ) : result && !visualizing && steps.length > 0 ? (
+              <>
+                <ResultCheck
+                  key={result.runId}
+                  expected={part.hasilAkhirTervalidasi}
+                  lastStep={player.lastStep}
+                />
+                <button
+                  type="button"
+                  onClick={handleVisualize}
+                  disabled={running || stale}
+                  className="flex h-9 items-center justify-center self-start rounded-[10px] bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {stale
+                    ? "Cek ulang sebelum visualisasi"
+                    : "▶ Lanjutkan visualisasi"}
+                </button>
+              </>
+            ) : (
+              <div className="my-auto rounded-app border border-dashed border-border px-6 py-12 text-center">
+                <p className="font-heading text-lg text-text-1">
+                  Siap dijalankan
+                </p>
+                <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-text-2">
+                  Data awal Part {part.partKe} udah ditulis langsung di kode,
+                  jadi program ini gak nanya apa-apa dulu. Klik{" "}
+                  <strong className="text-text-1">
+                    Cek kode
+                  </strong>{" "}
+                  buat lihat jalannya.
+                </p>
+              </div>
             )}
           </div>
         </Panel>
       </div>
 
-      <Transport
-        player={player}
-        steps={steps}
-        totalLines={codeLines.length}
-        idleHint={`Kontrol langkah muncul di sini setelah kode Part ${part.partKe} dijalankan.`}
-      />
 
       <PseudocodeDialog
         open={notesOpen}
