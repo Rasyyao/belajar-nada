@@ -68,7 +68,7 @@ function miniToRows(project, urutan) {
         deskripsi_soal: project.deskripsiSoal ?? null,
         nama_function: project.alurData?.namaFunction ?? project.id,
         starter_code: project.starterCode,
-        input_awal: null,
+        input_awal: project.inputAwal ?? null,
         hasil_akhir_tervalidasi: project.hasilAkhirTervalidasi ?? null,
         alur_data: project.alurData ?? null,
         catatan_konsep: project.catatanKonsep ?? null,

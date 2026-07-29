@@ -174,12 +174,12 @@ export default function ProjectRunner({ project, nextProject }) {
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 pb-3 xl:grid-cols-[20rem_minmax(0,1fr)_minmax(0,1.15fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 pb-3 xl:grid-cols-[24rem_minmax(0,1.35fr)_minmax(0,1fr)]">
         {/* Kolom kiri: cerita + jawaban yang bakal disuapin ke program. */}
         <div className="flex min-h-0 flex-col gap-3">
           <Panel title="Cerita" hint={`musim ${project.musim}`} className="flex-1">
             <div className="flex flex-col gap-3 p-4">
-              <p className="text-[13px] leading-relaxed text-text-1">
+              <p className="text-sm leading-relaxed text-text-1">
                 {project.cerita}
               </p>
 
@@ -187,7 +187,7 @@ export default function ProjectRunner({ project, nextProject }) {
                 <h3 className="mb-1 text-[10px] font-semibold tracking-wider text-text-2 uppercase">
                   Yang dikerjain
                 </h3>
-                <p className="text-[13px] leading-relaxed text-text-1">
+                <p className="text-sm leading-relaxed text-text-1">
                   {project.deskripsiSoal}
                 </p>
               </div>
@@ -210,12 +210,7 @@ export default function ProjectRunner({ project, nextProject }) {
             </div>
           </Panel>
 
-          {/* Input dan target hasil sengaja dijadiin satu panel: dibaca dari atas
-              ke bawah, jadinya "dikasih ini → harus jadi ini". */}
-          <Panel
-            title="Input & target"
-            className="shrink-0 xl:max-h-[62%]"
-          >
+          <Panel title="Input" className="shrink-0 xl:max-h-[62%]">
             <InputFeed
               inputs={inputs}
               labels={project.promptLabels}
@@ -224,11 +219,6 @@ export default function ProjectRunner({ project, nextProject }) {
               onReset={() => setInputs(project.inputs)}
               isDefault={inputsAreDefault}
               needsInput={project.inputs.length > 0}
-            />
-            <ExpectedResult
-              expected={project.hasilAkhirTervalidasi}
-              edited={!inputsAreDefault}
-              onResetInputs={() => setInputs(project.inputs)}
             />
           </Panel>
         </div>
@@ -302,10 +292,18 @@ export default function ProjectRunner({ project, nextProject }) {
           bodyClass="p-4"
         >
           <div
-            className={`flex flex-col gap-4 ${
-              steps.length === 0 ? "h-full justify-center" : ""
-            }`}
+            className={`flex flex-col gap-4 ${steps.length === 0 ? "min-h-full" : ""}`}
           >
+            <ExpectedResult
+              expected={project.hasilAkhirTervalidasi}
+              inputExample={project.inputAwal}
+              starterCode={project.starterCode}
+              inputs={inputs}
+              labels={project.promptLabels}
+              edited={!inputsAreDefault}
+              onResetInputs={() => setInputs(project.inputs)}
+            />
+
             {stale && (
               <p className="rounded-app border border-border bg-bg px-3 py-2 text-[12px] text-text-2">
                 Kode atau input-nya berubah setelah ini dijalankan — jalankan
@@ -320,7 +318,7 @@ export default function ProjectRunner({ project, nextProject }) {
             />
 
             {steps.length === 0 ? (
-              <div className="rounded-app border border-dashed border-border px-6 py-12 text-center">
+              <div className="my-auto rounded-app border border-dashed border-border px-6 py-12 text-center">
                 <p className="font-heading text-lg text-text-1">
                   Siap dijalankan
                 </p>

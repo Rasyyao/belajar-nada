@@ -277,11 +277,10 @@ export default function PartProjectRunner({ project, nextProject }) {
                 type="button"
                 onClick={() => goToPart(index)}
                 aria-current={index === active ? "step" : undefined}
-                className={`flex h-10 items-center gap-2 rounded-[10px] border px-3 transition-colors ${
-                  index === active
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-border bg-surface text-text-2 hover:bg-bg hover:text-text-1"
-                }`}
+                className={`flex h-10 items-center gap-2 rounded-[10px] border px-3 transition-colors ${index === active
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-border bg-surface text-text-2 hover:bg-bg hover:text-text-1"
+                  }`}
               >
                 <span className="font-mono text-[11px] font-semibold">
                   Part {item.partKe}
@@ -303,7 +302,7 @@ export default function PartProjectRunner({ project, nextProject }) {
         </nav>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 py-3 xl:grid-cols-[20rem_minmax(0,1fr)_minmax(0,1.15fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 py-3 xl:grid-cols-[24rem_minmax(0,1.35fr)_minmax(0,1fr)]">
         {/* Kolom kiri: cerita part yang lagi kebuka + data awal & targetnya. */}
         <div className="flex min-h-0 flex-col gap-3">
           <Panel
@@ -312,7 +311,7 @@ export default function PartProjectRunner({ project, nextProject }) {
             className="flex-1"
           >
             <div className="flex flex-col gap-3 p-4">
-              <p className="text-[13px] leading-relaxed text-text-1">
+              <p className="text-sm leading-relaxed text-text-1">
                 {part.cerita}
               </p>
 
@@ -320,7 +319,7 @@ export default function PartProjectRunner({ project, nextProject }) {
                 <h3 className="mb-1 text-[10px] font-semibold tracking-wider text-text-2 uppercase">
                   Yang dikerjain
                 </h3>
-                <p className="text-[13px] leading-relaxed text-text-1">
+                <p className="text-sm leading-relaxed text-text-1">
                   {part.deskripsiSoal}
                 </p>
               </div>
@@ -343,9 +342,8 @@ export default function PartProjectRunner({ project, nextProject }) {
             </div>
           </Panel>
 
-          <Panel title="Data awal & target" className="shrink-0 xl:max-h-[62%]">
+          <Panel title="Data awal" className="shrink-0 xl:max-h-[62%]">
             <InitialData data={part.inputAwal} origins={inputOrigins} />
-            <ExpectedResult expected={part.hasilAkhirTervalidasi} />
           </Panel>
         </div>
 
@@ -419,10 +417,14 @@ export default function PartProjectRunner({ project, nextProject }) {
           bodyClass="p-4"
         >
           <div
-            className={`flex flex-col gap-4 ${
-              steps.length === 0 ? "h-full justify-center" : ""
-            }`}
+            className={`flex flex-col gap-4 ${steps.length === 0 ? "min-h-full" : ""}`}
           >
+            <ExpectedResult
+              expected={part.hasilAkhirTervalidasi}
+              inputExample={part.inputAwal}
+              starterCode={part.starterCode}
+            />
+
             {stale && (
               <p className="rounded-app border border-border bg-bg px-3 py-2 text-[12px] text-text-2">
                 Kodenya berubah setelah ini dijalankan — jalankan ulang biar
@@ -437,7 +439,7 @@ export default function PartProjectRunner({ project, nextProject }) {
             />
 
             {steps.length === 0 ? (
-              <div className="rounded-app border border-dashed border-border px-6 py-12 text-center">
+              <div className="my-auto rounded-app border border-dashed border-border px-6 py-12 text-center">
                 <p className="font-heading text-lg text-text-1">
                   Siap dijalankan
                 </p>

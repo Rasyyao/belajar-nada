@@ -8,6 +8,9 @@
     "visualTheme": "pohon-simpanan",
     "deskripsiSoal": "Buat SATU function simpanSemuaKacang(kacangDitemukan) yang di dalamnya bikin tumpukan kosong, loop ke semua kacang, push satu-satu, lalu return hasilnya. Loop-nya HARUS di dalam function ini, bukan di luar.",
     "starterCode": "function simpanSemuaKacang(kacangDitemukan) {\n  var tumpukanKacang = [];\n  // tulis kodemu di sini (loop + push)\n\n  return tumpukanKacang;\n}\n\nvar kacangDitemukan = [\"Kenari\", \"Almond\", \"Kastanye\"];\nvar tumpukanKacang = simpanSemuaKacang(kacangDitemukan);",
+    "inputAwal": {
+      "kacangDitemukan": ["Kenari", "Almond", "Kastanye"]
+    },
     "inputs": [],
     "promptLabels": [],
     "hasilAkhirTervalidasi": {
@@ -41,6 +44,9 @@
     "visualTheme": "pohon-simpanan",
     "deskripsiSoal": "Tumpukan awal udah ada dari hasil musim gugur. Buat SATU function bongkarSimpanan(tumpukanKacang, jumlahHari) yang di dalamnya loop sebanyak jumlahHari, pakai if-else tiap putaran (kalau tumpukan masih ada isi, pop; kalau kosong, catat 'Habis!'), lalu return daftar kacang yang dimakan.",
     "starterCode": "function bongkarSimpanan(tumpukanKacang, jumlahHari) {\n  var kacangDimakan = [];\n  // tulis kodemu di sini (loop + if-else + pop)\n\n  return kacangDimakan;\n}\n\nvar tumpukanKacang = [\"Kenari\", \"Almond\", \"Kastanye\"];\nvar jumlahHari = Number(ambilInput());\nvar kacangDimakan = bongkarSimpanan(tumpukanKacang, jumlahHari);",
+    "inputAwal": {
+      "tumpukanKacang": ["Kenari", "Almond", "Kastanye"]
+    },
     "inputs": ["5"],
     "promptLabels": ["Musim dingin berapa hari?"],
     "hasilAkhirTervalidasi": {

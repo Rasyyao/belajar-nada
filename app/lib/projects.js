@@ -37,12 +37,13 @@ function schemaBelumAda(error) {
 /** Isi `app/data/*.json`, dalam bentuk yang sama kayak hasil dari database. */
 function projectsDariJson() {
   return [
-    ...miniProjectsJson.map((p) => ({ ...p, tipe: "mini" })),
-    ...partProjectsJson.map((p) => ({ ...p, tipe: "berpart" })),
+    ...miniProjectsJson.map((p) => ({ ...p, tipe: "mini", createdAt: null })),
+    ...partProjectsJson.map((p) => ({ ...p, tipe: "berpart", createdAt: null })),
   ];
 }
 
-const CASE_COLUMNS = "id, slug, judul, cerita_utama, visual_theme, tipe, musim, urutan";
+const CASE_COLUMNS =
+  "id, slug, judul, cerita_utama, visual_theme, tipe, musim, urutan, created_at";
 const PART_COLUMNS =
   "part_ke, judul_part, tema, cerita, deskripsi_soal, nama_function, starter_code, input_awal, hasil_akhir_tervalidasi, alur_data, catatan_konsep, hints, inputs, prompt_labels, bandingkan";
 
@@ -87,12 +88,14 @@ function toProject(row) {
       tipe: "mini",
       id: row.slug,
       judul: row.judul,
+      createdAt: row.created_at ?? null,
       tema: part.tema,
       musim: row.musim,
       cerita: row.cerita_utama ?? part.cerita,
       visualTheme: row.visual_theme,
       deskripsiSoal: part.deskripsiSoal,
       starterCode: part.starterCode,
+      inputAwal: part.inputAwal,
       inputs: part.inputs ?? [],
       promptLabels: part.promptLabels ?? [],
       hasilAkhirTervalidasi: part.hasilAkhirTervalidasi,
@@ -108,6 +111,7 @@ function toProject(row) {
     tipe: "berpart",
     id: row.slug,
     judul: row.judul,
+    createdAt: row.created_at ?? null,
     ceritaUtama: row.cerita_utama,
     visualTheme: row.visual_theme,
     parts,
