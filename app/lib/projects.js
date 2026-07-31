@@ -1,4 +1,6 @@
 import { isSupabaseConfigured, supabasePublic } from "./supabase";
+import { normalizeDaftarFunction } from "./functionDirectory";
+import { clampPage, PAGE_SIZE } from "./pagination";
 
 /**
  * Satu-satunya pintu ke materi soal.
@@ -16,6 +18,10 @@ import { isSupabaseConfigured, supabasePublic } from "./supabase";
  *
  * Setelah migrasi, Supabase adalah satu-satunya sumber runtime. JSON tetap
  * disimpan sebagai sumber seed/migrasi, bukan fallback data aplikasi.
+ *
+ * Query membaca schema lama sementara: project yang sudah dibuat sebelum
+ * `daftar_function` ditambahkan tetap bisa membuka daftar soal. Setelah
+ * migrasi schema dijalankan, query utama otomatis dipakai lagi.
  */
 
 /** PGRST205 = tabelnya gak ada di schema cache, alias belum pernah dibikin. */
@@ -24,7 +30,48 @@ const SCHEMA_BELUM_ADA = "PGRST205";
 const CASE_COLUMNS =
   "id, slug, judul, cerita_utama, visual_theme, tipe, musim, urutan, created_at";
 const PART_COLUMNS =
+  "part_ke, judul_part, tema, cerita, deskripsi_soal, nama_function, starter_code, input_awal, hasil_akhir_tervalidasi, daftar_function, alur_data, catatan_konsep, hints, inputs, prompt_labels, bandingkan";
+// Database lama belum punya `daftar_function`; data lamanya masih memakai
+// `alur_data`. Tetap dukung schema tersebut supaya halaman publik tidak mati
+// sebelum migrasi Supabase dijalankan.
+const LEGACY_PART_COLUMNS =
   "part_ke, judul_part, tema, cerita, deskripsi_soal, nama_function, starter_code, input_awal, hasil_akhir_tervalidasi, alur_data, catatan_konsep, hints, inputs, prompt_labels, bandingkan";
+
+function missingDaftarFunctionColumn(error) {
+  return (
+    error?.code === "42703" &&
+    /daftar_function/i.test(error?.message ?? "")
+  );
+}
+
+async function fetchCases({ slug, page, pageSize = PAGE_SIZE } = {}) {
+  const run = (partColumns) => {
+    let query = supabasePublic()
+      .from("cases")
+      .select(`${CASE_COLUMNS}, parts(${partColumns})`, {
+        count: slug === undefined ? "exact" : undefined,
+      });
+
+    if (slug !== undefined) {
+      query = query.eq("slug", slug).maybeSingle();
+    } else {
+      query = query
+        .order("urutan", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (page !== undefined) {
+        const from = (page - 1) * pageSize;
+        query = query.range(from, from + pageSize - 1);
+      }
+    }
+    return query;
+  };
+
+  let result = await run(PART_COLUMNS);
+  if (missingDaftarFunctionColumn(result.error)) {
+    result = await run(LEGACY_PART_COLUMNS);
+  }
+  return result;
+}
 
 /** Baris `parts` → bentuk part yang dibaca PartProjectRunner. */
 function toPart(row) {
@@ -38,7 +85,7 @@ function toPart(row) {
     starterCode: row.starter_code,
     inputAwal: row.input_awal ?? {},
     hasilAkhirTervalidasi: row.hasil_akhir_tervalidasi ?? {},
-    alurData: row.alur_data ?? null,
+    daftarFunction: normalizeDaftarFunction(row.daftar_function, row.alur_data, row.nama_function),
     catatanKonsep: row.catatan_konsep ?? [],
     hints: row.hints ?? [],
     bandingkan: row.bandingkan ?? undefined,
@@ -78,7 +125,7 @@ function toProject(row) {
       inputs: part.inputs ?? [],
       promptLabels: part.promptLabels ?? [],
       hasilAkhirTervalidasi: part.hasilAkhirTervalidasi,
-      alurData: part.alurData,
+      daftarFunction: part.daftarFunction,
       catatanKonsep: part.catatanKonsep,
       hints: part.hints,
     };
@@ -103,11 +150,7 @@ export async function getAllProjects() {
     throw new Error("Supabase belum dikonfigurasi untuk Mini Project.");
   }
 
-  const { data, error } = await supabasePublic()
-    .from("cases")
-    .select(`${CASE_COLUMNS}, parts(${PART_COLUMNS})`)
-    .order("urutan", { ascending: true })
-    .order("created_at", { ascending: true });
+  const { data, error } = await fetchCases();
 
   if (error?.code === SCHEMA_BELUM_ADA) {
     throw new Error("Tabel cases/parts belum ada. Jalankan supabase/schema.sql terlebih dahulu.");
@@ -115,6 +158,38 @@ export async function getAllProjects() {
   if (error) throw new Error(`Gagal ambil daftar soal dari Supabase: ${error.message}`);
 
   return (data ?? []).map(toProject).filter(Boolean);
+}
+
+/** Ambil maksimal satu halaman case dari database, bukan seluruh daftar. */
+export async function getProjectsPage(page = 1, pageSize = PAGE_SIZE) {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase belum dikonfigurasi untuk Mini Project.");
+  }
+
+  const { count: total, error: countError } = await supabasePublic()
+    .from("cases")
+    .select("id", { count: "exact", head: true });
+
+  if (countError?.code === SCHEMA_BELUM_ADA) {
+    throw new Error("Tabel cases belum ada. Jalankan supabase/schema.sql terlebih dahulu.");
+  }
+  if (countError) throw new Error(`Gagal menghitung soal: ${countError.message}`);
+
+  if (!total) return { items: [], total: 0, page: 1 };
+
+  const safePage = clampPage(page, total ?? 0, pageSize);
+  const { data, error } = await fetchCases({ page: safePage, pageSize });
+
+  if (error?.code === SCHEMA_BELUM_ADA) {
+    throw new Error("Tabel cases/parts belum ada. Jalankan supabase/schema.sql terlebih dahulu.");
+  }
+  if (error) throw new Error(`Gagal ambil halaman soal dari Supabase: ${error.message}`);
+
+  return {
+    items: (data ?? []).map(toProject).filter(Boolean),
+    total: total ?? 0,
+    page: safePage,
+  };
 }
 
 export async function getMiniProjects() {
@@ -136,11 +211,7 @@ export async function getProject(slug) {
     throw new Error("Supabase belum dikonfigurasi untuk Mini Project.");
   }
 
-  const { data, error } = await supabasePublic()
-    .from("cases")
-    .select(`${CASE_COLUMNS}, parts(${PART_COLUMNS})`)
-    .eq("slug", slug)
-    .maybeSingle();
+  const { data, error } = await fetchCases({ slug });
 
   if (error?.code === SCHEMA_BELUM_ADA) {
     throw new Error("Tabel cases/parts belum ada. Jalankan supabase/schema.sql terlebih dahulu.");

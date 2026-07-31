@@ -12,6 +12,7 @@
 
 import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
+import { mainFunctionName } from "../app/lib/functionDirectory.js";
 
 const root = new URL("..", import.meta.url);
 
@@ -47,6 +48,14 @@ async function loadEnv() {
 const readJson = async (name) =>
   JSON.parse(await readFile(new URL(`app/data/${name}`, root), "utf8"));
 
+async function readOptionalRootJson(name) {
+  try {
+    return JSON.parse(await readFile(new URL(name, root), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 /** Mini project: satu case + satu part yang nampung semua isinya. */
 function miniToRows(project, urutan) {
   return {
@@ -66,11 +75,11 @@ function miniToRows(project, urutan) {
         tema: project.tema ?? null,
         cerita: project.cerita ?? null,
         deskripsi_soal: project.deskripsiSoal ?? null,
-        nama_function: project.alurData?.namaFunction ?? project.id,
+        nama_function: mainFunctionName(project.daftarFunction, project.id),
         starter_code: project.starterCode,
         input_awal: project.inputAwal ?? null,
         hasil_akhir_tervalidasi: project.hasilAkhirTervalidasi ?? null,
-        alur_data: project.alurData ?? null,
+        daftar_function: project.daftarFunction ?? null,
         catatan_konsep: project.catatanKonsep ?? null,
         hints: project.hints ?? null,
         inputs: project.inputs ?? [],
@@ -103,7 +112,7 @@ function partProjectToRows(project, urutan) {
       starter_code: part.starterCode,
       input_awal: part.inputAwal ?? null,
       hasil_akhir_tervalidasi: part.hasilAkhirTervalidasi ?? null,
-      alur_data: part.alurData ?? null,
+      daftar_function: part.daftarFunction ?? null,
       catatan_konsep: part.catatanKonsep ?? null,
       hints: part.hints ?? null,
       inputs: null,
@@ -152,12 +161,14 @@ async function main() {
   ]);
   const reviews = await readJson("review-soal.json");
   const quizSets = await readJson("quiz-sets.json");
+  const extraCase = await readOptionalRootJson("data.json");
 
   // Urutan di daftar soal ikut urutan file lama: mini project dulu (ceritanya
   // nyambung), baru soal berpart.
   const all = [
     ...minis.map((project, i) => miniToRows(project, i + 1)),
     ...partProjects.map((project, i) => partProjectToRows(project, minis.length + i + 1)),
+    ...(extraCase ? [miniToRows(extraCase, minis.length + partProjects.length + 1)] : []),
   ];
 
   for (const { caseRow, partRows } of all) {

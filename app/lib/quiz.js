@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabasePublic } from "./supabase";
+import { clampPage, PAGE_SIZE } from "./pagination";
 
 export { cocokJawaban, normalisasiJawaban } from "./quizAnswer";
 
@@ -46,6 +47,39 @@ export async function getAllQuizSets() {
     }
     if (error) throw new Error(`Gagal ambil Quiz Quick Review: ${error.message}`);
     return (data ?? []).map(toSet);
+}
+
+/** Ambil maksimal satu halaman set quiz dari database. */
+export async function getQuizSetsPage(page = 1, pageSize = PAGE_SIZE) {
+    if (!isSupabaseConfigured()) {
+        throw new Error("Supabase belum dikonfigurasi untuk Quiz Quick Review.");
+    }
+
+    const { count: total, error: countError } = await supabasePublic()
+        .from("quiz_set")
+        .select("id", { count: "exact", head: true });
+
+    if (countError?.code === SCHEMA_BELUM_ADA) {
+        throw new Error("Tabel quiz_set belum ada. Jalankan supabase/schema.sql terlebih dahulu.");
+    }
+    if (countError) throw new Error(`Gagal menghitung Quiz Quick Review: ${countError.message}`);
+
+    if (!total) return { items: [], total: 0, page: 1 };
+
+    const safePage = clampPage(page, total ?? 0, pageSize);
+    const from = (safePage - 1) * pageSize;
+    const { data, error } = await supabasePublic()
+        .from("quiz_set")
+        .select(`${SET_COLUMNS}, quiz_soal(${QUESTION_COLUMNS})`, { count: "exact" })
+        .order("urutan", { ascending: true })
+        .order("created_at", { ascending: true })
+        .range(from, from + pageSize - 1);
+
+    if (error?.code === SCHEMA_BELUM_ADA) {
+        throw new Error("Tabel quiz_set/quiz_soal belum ada. Jalankan supabase/schema.sql terlebih dahulu.");
+    }
+    if (error) throw new Error(`Gagal ambil halaman Quiz Quick Review: ${error.message}`);
+    return { items: (data ?? []).map(toSet), total: total ?? 0, page: safePage };
 }
 
 export async function getQuizSet(slug) {

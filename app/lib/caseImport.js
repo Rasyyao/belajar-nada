@@ -1,3 +1,5 @@
+import { mainFunctionName, normalizeDaftarFunction } from "./functionDirectory.js";
+
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function firstDefined(...values) {
@@ -13,6 +15,12 @@ function normalizePart(raw, index, type) {
         ? Math.trunc(Number(raw.partKe ?? raw.part_ke))
         : index + 1;
 
+    const daftarFunction = normalizeDaftarFunction(
+        firstDefined(raw?.daftarFunction, raw?.daftar_function, null),
+        firstDefined(raw?.alurData, raw?.alur_data, null),
+        firstDefined(raw?.namaFunction, raw?.nama_function, raw?.alurData?.namaFunction, ""),
+    );
+
     return {
         partKe,
         judulPart: firstDefined(raw?.judulPart, raw?.judul_part, type === "mini" ? raw?.judul : "") ?? "",
@@ -23,6 +31,7 @@ function normalizePart(raw, index, type) {
             raw?.namaFunction,
             raw?.nama_function,
             raw?.alurData?.namaFunction,
+            mainFunctionName(daftarFunction, ""),
             "",
         ) ?? "",
         starterCode: firstDefined(raw?.starterCode, raw?.starter_code, "") ?? "",
@@ -35,7 +44,7 @@ function normalizePart(raw, index, type) {
             raw?.hasil_akhir_tervalidasi,
             null,
         ),
-        alurData: firstDefined(raw?.alurData, raw?.alur_data, null),
+        daftarFunction,
         catatanKonsep: firstDefined(raw?.catatanKonsep, raw?.catatan_konsep, null),
         bandingkan: raw?.bandingkan ?? null,
     };

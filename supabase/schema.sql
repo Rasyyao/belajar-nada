@@ -40,6 +40,7 @@ create table if not exists parts (
   starter_code text not null,
   input_awal jsonb,
   hasil_akhir_tervalidasi jsonb,
+  daftar_function jsonb,
   alur_data jsonb,
   catatan_konsep jsonb,
   hints jsonb,
@@ -53,6 +54,10 @@ create table if not exists parts (
   created_at timestamptz default now(),
   unique (case_id, part_ke)
 );
+
+-- Migrasi aman dari diagram satu-function lama.
+alter table parts
+  add column if not exists daftar_function jsonb;
 
 -- Konten belajar (bacaan/penjelasan, bukan soal).
 create table if not exists materi (

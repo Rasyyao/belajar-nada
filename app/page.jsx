@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MotionConfig } from "framer-motion";
 import Link from "next/link";
 import CodeEditor from "./components/CodeEditor";
 import ErrorBox from "./components/ErrorBox";
@@ -9,7 +10,9 @@ import StepView, { buildVarOrder } from "./components/StepView";
 import Transport from "./components/Transport";
 import { es5ify, runCode } from "./lib/interpreter";
 import { decodeState, encodeState } from "./lib/share";
+import { useAiSimplify } from "./lib/useAiSimplify";
 import { useStepPlayer } from "./lib/useStepPlayer";
+import { buildBaselineLayout, selectStepLayout } from "./lib/visualizationRefinement";
 import {
   DEFAULT_CODE,
   DEFAULT_PSEUDOCODE,
@@ -60,6 +63,16 @@ export default function Playground() {
   const player = useStepPlayer(steps);
   const varOrder = useMemo(() => buildVarOrder(steps), [steps]);
   const codeLines = useMemo(() => code.split("\n"), [code]);
+  const currentStep = player.current;
+
+  // AI refinement (Fase 2) gak pernah ikut nge-block `handleRun` — baseline
+  // rule-based di bawah kepasang instan, ini cuma nawarin upgrade opsional
+  // lewat tombol "Sederhanakan tampilan" di StepView.
+  const ai = useAiSimplify(result);
+  const layoutHints = useMemo(
+    () => selectStepLayout(ai.activeLayout, currentStep),
+    [currentStep, ai.activeLayout],
+  );
 
   // `reset` dipisah dari objek player karena referensinya stabil — kalau
   // `player` yang dipakai sebagai dependency, handleRun bikin ulang tiap render.
@@ -69,7 +82,11 @@ export default function Playground() {
     setRunning(true);
     try {
       const next = await runCode(code);
-      setResult(next);
+      const visualizationLayout = buildBaselineLayout({
+        steps: next.steps,
+        codeLines: code.split("\n"),
+      });
+      setResult({ ...next, ranCode: code, visualizationLayout });
       resetPlayer();
     } finally {
       setRunning(false);
@@ -109,162 +126,172 @@ export default function Playground() {
   }, [handleRun]);
 
   return (
-    <div className="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
-      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        <h1 className="font-heading text-xl leading-none text-text-1">
-          Playground Belajar
-        </h1>
-        <p className="hidden text-[13px] text-text-2 sm:block">
-          Soal → pseudocode → kode → jalannya program, satu langkah demi satu langkah.
-        </p>
+    <MotionConfig reducedMotion="user">
+      <div className="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
+        <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+          <h1 className="font-heading text-xl leading-none text-text-1">
+            Playground Belajar
+          </h1>
+          <p className="hidden text-[13px] text-text-2 sm:block">
+            Soal → pseudocode → kode → jalannya program, satu langkah demi satu langkah.
+          </p>
 
-        <div className="ml-auto flex items-center gap-2">
-          <span className="hidden rounded-full bg-accent-soft px-3 py-1.5 text-[11px] font-medium text-accent lg:inline">
-            Mode ES5 · pakai <code className="font-mono">var</code>, bukan{" "}
-            <code className="font-mono">let</code>
-          </span>
-          <Link
-            href="/mini-project"
-            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-          >
-            Mini project
-          </Link>
-          <Link
-            href="/review"
-            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-          >
-            Review Mode
-          </Link>
-          <Link
-            href="/quiz"
-            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-          >
-            Quick Review
-          </Link>
-          <Link
-            href="/materi"
-            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-          >
-            Materi
-          </Link>
-          <button
-            type="button"
-            onClick={handleShare}
-            className="h-9 rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-          >
-            {shareLabel}
-          </button>
-        </div>
-      </header>
-
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 pb-3 xl:grid-cols-[19rem_minmax(0,1fr)_minmax(0,1.15fr)]">
-        {/* Kolom kiri: bahan yang dibaca, bukan yang dijalankan. */}
-        <div className="flex min-h-0 flex-col gap-3">
-          <Panel title="Soal" hint="apa yang mau dikerjain" className="flex-1">
-            <textarea
-              value={soal}
-              onChange={(e) => setSoal(e.target.value)}
-              spellCheck={false}
-              className="h-full min-h-40 w-full resize-none bg-transparent p-4 font-body text-[13px] leading-relaxed text-text-1 outline-none xl:min-h-0"
-              placeholder="Tulis soalnya di sini…"
-            />
-          </Panel>
-
-          <Panel
-            title="Pseudocode"
-            hint="rencana sebelum ngoding"
-            className="flex-1"
-          >
-            <textarea
-              value={pseudocode}
-              onChange={(e) => setPseudocode(e.target.value)}
-              spellCheck={false}
-              className="no-liga h-full min-h-40 w-full resize-none bg-transparent p-4 font-mono text-[12.5px] leading-relaxed text-text-1 outline-none xl:min-h-0"
-              placeholder="MULAI …"
-            />
-          </Panel>
-        </div>
-
-        {/* Kolom tengah: kode. */}
-        <Panel
-          title="Kode"
-          hint="JavaScript"
-          action={
+          <div className="ml-auto flex items-center gap-2">
+            <span className="hidden rounded-full bg-accent-soft px-3 py-1.5 text-[11px] font-medium text-accent lg:inline">
+              Mode ES5 · pakai <code className="font-mono">var</code>, bukan{" "}
+              <code className="font-mono">let</code>
+            </span>
+            <Link
+              href="/mini-project"
+              className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+            >
+              Mini project
+            </Link>
+            <Link
+              href="/review"
+              className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+            >
+              Review Mode
+            </Link>
+            <Link
+              href="/quiz"
+              className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+            >
+              Quick Review
+            </Link>
+            <Link
+              href="/materi"
+              className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+            >
+              Materi
+            </Link>
             <button
               type="button"
-              onClick={handleRun}
-              disabled={running}
-              className="flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-60"
+              onClick={handleShare}
+              className="h-9 rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
             >
-              {running ? "Menjalankan…" : "Jalankan & Visualisasikan"}
-              <kbd className="hidden rounded bg-white/20 px-1.5 py-0.5 font-mono text-[10px] font-normal 2xl:inline">
-                ⌘↵
-              </kbd>
+              {shareLabel}
             </button>
-          }
-        >
-          <div className="h-full min-h-72 xl:min-h-0">
-            <CodeEditor
-              value={code}
-              onChange={setCode}
-              activeLine={player.step ? player.step.line : null}
-              onRun={handleRun}
-            />
           </div>
-        </Panel>
+        </header>
 
-        {/* Kolom kanan: apa yang terjadi di langkah ini. */}
-        <Panel
-          title="Visualisasi"
-          hint={
-            steps.length > 0
-              ? `langkah ${player.current + 1} dari ${steps.length}`
-              : "belum dijalankan"
-          }
-          bodyClass="p-4"
-        >
-          <div
-            className={`flex flex-col gap-4 ${steps.length === 0 ? "h-full justify-center" : ""
-              }`}
-          >
-            <ErrorBox
-              error={error}
-              stepCount={steps.length}
-              onFixLetConst={() => setCode((c) => es5ify(c))}
-            />
-
-            {steps.length === 0 ? (
-              <div className="rounded-app border border-dashed border-border px-6 py-12 text-center">
-                <p className="font-heading text-lg text-text-1">
-                  Belum ada yang dijalankan
-                </p>
-                <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-text-2">
-                  Klik <strong className="text-text-1">Jalankan &amp; Visualisasikan</strong>{" "}
-                  di panel Kode. Setiap langkah bakal muncul di sini: baris yang
-                  lagi jalan, isi tiap variabel, dan output console.
-                </p>
-              </div>
-            ) : (
-              <StepView
-                step={player.step}
-                prevStep={player.prevStep}
-                codeLines={codeLines}
-                varOrder={varOrder}
-                logs={logs}
-                showAllLogs={player.atEnd}
-                stepKey={player.current}
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 pb-3 xl:grid-cols-[19rem_minmax(0,1fr)_minmax(0,1.15fr)]">
+          {/* Kolom kiri: bahan yang dibaca, bukan yang dijalankan. */}
+          <div className="flex min-h-0 flex-col gap-3">
+            <Panel title="Soal" hint="apa yang mau dikerjain" className="flex-1">
+              <textarea
+                value={soal}
+                onChange={(e) => setSoal(e.target.value)}
+                spellCheck={false}
+                className="h-full min-h-40 w-full resize-none bg-transparent p-4 font-body text-[13px] leading-relaxed text-text-1 outline-none xl:min-h-0"
+                placeholder="Tulis soalnya di sini…"
               />
-            )}
-          </div>
-        </Panel>
-      </div>
+            </Panel>
 
-      <Transport
-        player={player}
-        steps={steps}
-        totalLines={codeLines.length}
-        idleHint="Kontrol langkah muncul di sini setelah kodenya dijalankan."
-      />
-    </div>
+            <Panel
+              title="Pseudocode"
+              hint="rencana sebelum ngoding"
+              className="flex-1"
+            >
+              <textarea
+                value={pseudocode}
+                onChange={(e) => setPseudocode(e.target.value)}
+                spellCheck={false}
+                className="no-liga h-full min-h-40 w-full resize-none bg-transparent p-4 font-mono text-[12.5px] leading-relaxed text-text-1 outline-none xl:min-h-0"
+                placeholder="MULAI …"
+              />
+            </Panel>
+          </div>
+
+          {/* Kolom tengah: kode. */}
+          <Panel
+            title="Kode"
+            hint="JavaScript"
+            action={
+              <button
+                type="button"
+                onClick={handleRun}
+                disabled={running}
+                className="flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-60"
+              >
+                {running ? "Menjalankan…" : "Jalankan & Visualisasikan"}
+                <kbd className="hidden rounded bg-white/20 px-1.5 py-0.5 font-mono text-[10px] font-normal 2xl:inline">
+                  ⌘↵
+                </kbd>
+              </button>
+            }
+          >
+            <div className="h-full min-h-72 xl:min-h-0">
+              <CodeEditor
+                value={code}
+                onChange={setCode}
+                activeLine={player.step ? player.step.line : null}
+                onRun={handleRun}
+              />
+            </div>
+          </Panel>
+
+          {/* Kolom kanan: apa yang terjadi di langkah ini. */}
+          <Panel
+            title="Visualisasi"
+            hint={
+              steps.length > 0
+                ? `langkah ${player.current + 1} dari ${steps.length}`
+                : "belum dijalankan"
+            }
+            bodyClass="p-4"
+          >
+            <div
+              className={`flex flex-col gap-4 ${steps.length === 0 ? "h-full justify-center" : ""
+                }`}
+            >
+              <ErrorBox
+                error={error}
+                stepCount={steps.length}
+                onFixLetConst={() => setCode((c) => es5ify(c))}
+              />
+
+              {steps.length === 0 ? (
+                <div className="rounded-app border border-dashed border-border px-6 py-12 text-center">
+                  <p className="font-heading text-lg text-text-1">
+                    Belum ada yang dijalankan
+                  </p>
+                  <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-text-2">
+                    Klik <strong className="text-text-1">Jalankan &amp; Visualisasikan</strong>{" "}
+                    di panel Kode. Setiap langkah bakal muncul di sini: baris yang
+                    lagi jalan, isi tiap variabel, dan output console.
+                  </p>
+                </div>
+              ) : (
+                <StepView
+                  step={player.step}
+                  prevStep={player.prevStep}
+                  codeLines={codeLines}
+                  varOrder={varOrder}
+                  logs={logs}
+                  showAllLogs={player.atEnd}
+                  stepKey={player.current}
+                  layoutHints={layoutHints}
+                  ai={{
+                    available: ai.available,
+                    phase: ai.phase,
+                    showAi: ai.showAi,
+                    reason: ai.reason,
+                    onToggle: ai.toggle,
+                  }}
+                />
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        <Transport
+          player={player}
+          steps={steps}
+          totalLines={codeLines.length}
+          idleHint="Kontrol langkah muncul di sini setelah kodenya dijalankan."
+        />
+      </div>
+    </MotionConfig>
   );
 }

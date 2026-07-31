@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabase";
+import { mainFunctionName } from "./functionDirectory";
 
 /**
  * Terjemahan payload form admin → baris tabel, plus validasinya.
@@ -38,11 +39,17 @@ function jsonOrNull(value) {
 function normalizePart(raw, index) {
   const partKe = toInt(raw?.partKe, index + 1);
   const judulPart = orNull(raw?.judulPart);
-  const namaFunction = orNull(raw?.namaFunction);
+  const daftarFunction = jsonOrNull(raw?.daftarFunction);
+  const namaFunction = orNull(
+    raw?.namaFunction || mainFunctionName(daftarFunction, ""),
+  );
   const starterCode = typeof raw?.starterCode === "string" ? raw.starterCode : "";
 
   if (!judulPart) return { error: `Part ${partKe}: judul part masih kosong.` };
   if (!namaFunction) return { error: `Part ${partKe}: nama function masih kosong.` };
+  if (!Array.isArray(daftarFunction) || daftarFunction.length === 0) {
+    return { error: `Part ${partKe}: daftar function harus berupa array yang berisi minimal satu function.` };
+  }
   if (starterCode.trim() === "") {
     return { error: `Part ${partKe}: starter code masih kosong.` };
   }
@@ -58,7 +65,7 @@ function normalizePart(raw, index) {
       starter_code: starterCode,
       input_awal: jsonOrNull(raw?.inputAwal),
       hasil_akhir_tervalidasi: jsonOrNull(raw?.hasilAkhirTervalidasi),
-      alur_data: jsonOrNull(raw?.alurData),
+      daftar_function: daftarFunction,
       catatan_konsep: jsonOrNull(raw?.catatanKonsep),
       hints: jsonOrNull(raw?.hints),
       inputs: jsonOrNull(raw?.inputs),

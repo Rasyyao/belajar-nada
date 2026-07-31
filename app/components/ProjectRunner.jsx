@@ -8,7 +8,7 @@ import ExpectedResult from "./ExpectedResult";
 import HintDialog from "./HintDialog";
 import InputFeed from "./InputFeed";
 import Panel from "./Panel";
-import ParamReturnDiagram from "./ParamReturnDiagram";
+import FunctionDirectory from "./FunctionDirectory";
 import PseudocodeDialog from "./PseudocodeDialog";
 import ResultCheck from "./ResultCheck";
 import StepView, { buildVarOrder } from "./StepView";
@@ -16,7 +16,9 @@ import Transport from "./Transport";
 import { readDraft, writeDraft } from "../lib/draft";
 import { es5ify, runCode } from "../lib/interpreter";
 import { SEASONS, themeIcon } from "../lib/themes";
+import { useAiSimplify } from "../lib/useAiSimplify";
 import { useStepPlayer } from "../lib/useStepPlayer";
+import { buildBaselineLayout, selectStepLayout } from "../lib/visualizationRefinement";
 
 const NO_STEPS = [];
 const NO_LOGS = [];
@@ -60,16 +62,36 @@ export default function ProjectRunner({ project, nextProject }) {
   const resetPlayer = player.reset;
   const varOrder = useMemo(() => buildVarOrder(steps), [steps]);
   const codeLines = useMemo(() => code.split("\n"), [code]);
+  const currentStep = player.current;
+
+  // AI refinement (Fase 2) gak pernah ikut nge-block eksekusi — baseline
+  // rule-based di bawah kepasang instan, ini cuma nawarin upgrade opsional
+  // lewat tombol "Sederhanakan tampilan" di StepView.
+  const ai = useAiSimplify(result);
+  const layoutHints = useMemo(
+    () => selectStepLayout(ai.activeLayout, currentStep),
+    [ai.activeLayout, currentStep],
+  );
 
   const executeCode = useCallback(async () => {
     setRunning(true);
     try {
       const next = await runCode(code, { inputs });
+      const visualizationLayout = buildBaselineLayout({
+        steps: next.steps,
+        codeLines: code.split("\n"),
+      });
       // Simpan kode & input yang dipakai, biar bisa dibilang kalau hasil yang
       // ditampilkan udah gak nyambung sama isi editor sekarang. `runId` cuma
       // penanda run ke berapa — dipakai sebagai `key` panel hasil supaya
       // animasi "cocok!" main lagi tiap kali dijalanin, bukan sekali doang.
-      setResult({ ...next, ranCode: code, ranInputs: inputs, runId: Date.now() });
+      setResult({
+        ...next,
+        ranCode: code,
+        ranInputs: inputs,
+        runId: Date.now(),
+        visualizationLayout,
+      });
       resetPlayer();
       return next;
     } finally {
@@ -238,7 +260,7 @@ export default function ProjectRunner({ project, nextProject }) {
                 </p>
               </div>
 
-              <ParamReturnDiagram alur={project.alurData} />
+              <FunctionDirectory functions={project.daftarFunction} />
 
               {(project.catatanKonsep ?? []).map((note) => (
                 <div
@@ -385,6 +407,14 @@ export default function ProjectRunner({ project, nextProject }) {
                   logs={logs}
                   showAllLogs={player.atEnd}
                   stepKey={player.current}
+                  layoutHints={layoutHints}
+                  ai={{
+                    available: ai.available,
+                    phase: ai.phase,
+                    showAi: ai.showAi,
+                    reason: ai.reason,
+                    onToggle: ai.toggle,
+                  }}
                 />
 
                 <ResultCheck

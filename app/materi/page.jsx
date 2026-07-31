@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { getMateriList, groupByKategori } from "../lib/materi";
+import SiteNav from "../components/SiteNav";
+import Pagination from "../components/Pagination";
+import MateriBrowser from "./MateriBrowser";
+import { parsePage } from "../lib/pagination";
+import { getMateriPage } from "../lib/materi";
 
 export const metadata = {
   title: "Materi — Playground Belajar",
@@ -9,13 +13,14 @@ export const metadata = {
 // Materi bisa ditambah lewat /admin/materi kapan aja.
 export const dynamic = "force-dynamic";
 
-export default async function MateriList() {
-  const list = await getMateriList();
-  const groups = groupByKategori(list);
+export default async function MateriList({ searchParams }) {
+  const params = await searchParams;
+  const page = parsePage(params?.page);
+  const { items: list, total, page: currentPage } = await getMateriPage(page);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-4xl flex-col gap-6 px-4 py-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto flex min-h-dvh w-full max-w-screen-2xl flex-col gap-5 px-3 py-5 sm:px-5 lg:px-6">
+      <header className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-heading text-2xl text-text-1">Materi</h1>
           <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-text-2">
@@ -23,26 +28,7 @@ export default async function MateriList() {
             yang bisa diunduh.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/mini-project"
-            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-          >
-            Mini project
-          </Link>
-          <Link
-            href="/quiz"
-            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-          >
-            Quick Review
-          </Link>
-          <Link
-            href="/"
-            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-          >
-            ← Playground
-          </Link>
-        </div>
+        <SiteNav current="/materi" />
       </header>
 
       {list.length === 0 ? (
@@ -54,50 +40,10 @@ export default async function MateriList() {
           .
         </p>
       ) : (
-        <div className="flex flex-col gap-6">
-          {groups.map((group) => (
-            <section key={group.kategori} className="flex flex-col gap-3">
-              <h2 className="flex items-baseline gap-2 font-heading text-lg text-text-1">
-                {group.kategori}
-                <span className="text-[12px] font-normal text-text-2">
-                  {group.items.length} materi
-                </span>
-              </h2>
-
-              <ul className="grid gap-3 md:grid-cols-2">
-                {group.items.map((item) => (
-                  <li key={item.id} className="flex">
-                    <Link
-                      href={`/materi/${item.id}`}
-                      className="group flex flex-1 flex-col gap-2 rounded-app border border-border bg-surface p-4 transition-colors hover:border-accent/50 hover:bg-accent-soft/30"
-                    >
-                      <h3 className="font-heading text-base text-text-1">
-                        {item.judul}
-                      </h3>
-
-                      {item.konten && (
-                        <p className="line-clamp-3 text-[12.5px] leading-relaxed text-text-2">
-                          {item.konten}
-                        </p>
-                      )}
-
-                      <p className="mt-auto flex items-center gap-2 pt-1 text-[12.5px] font-semibold text-accent">
-                        {item.file_url && <span aria-hidden>📎</span>}
-                        Baca
-                        <span
-                          aria-hidden
-                          className="transition-transform group-hover:translate-x-0.5"
-                        >
-                          →
-                        </span>
-                      </p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <>
+          <MateriBrowser list={list} />
+          <Pagination page={currentPage} total={total} />
+        </>
       )}
     </div>
   );

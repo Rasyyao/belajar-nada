@@ -9,7 +9,9 @@ import ResultCheck from "./ResultCheck";
 import StepView, { buildVarOrder } from "./StepView";
 import Transport from "./Transport";
 import { runCode } from "../lib/interpreter";
+import { useAiSimplify } from "../lib/useAiSimplify";
 import { useStepPlayer } from "../lib/useStepPlayer";
+import { buildBaselineLayout, selectStepLayout } from "../lib/visualizationRefinement";
 
 const FIELD_LABELS = {
     iSebelum: "i-nya berapa (sebelum dicek)",
@@ -341,7 +343,16 @@ export default function ReviewRunner({ review }) {
         () => buildTraceStepIndices(steps, review.jejakTervalidasi, codeLines, beforeField),
         [beforeField, codeLines, review.jejakTervalidasi, steps],
     );
-    const activeTraceIndex = traceStepIndices[player.current] ?? -1;
+    const currentStep = player.current;
+    // AI refinement (Fase 2) gak pernah ikut nge-block eksekusi — baseline
+    // rule-based di bawah kepasang instan, ini cuma nawarin upgrade opsional
+    // lewat tombol "Sederhanakan tampilan" di StepView.
+    const ai = useAiSimplify(result);
+    const layoutHints = useMemo(
+        () => selectStepLayout(ai.activeLayout, currentStep),
+        [ai.activeLayout, currentStep],
+    );
+    const activeTraceIndex = traceStepIndices[currentStep] ?? -1;
     const mismatch = result
         ? firstMismatch(rows, review.jejakTervalidasi, fields)
         : -1;
@@ -365,8 +376,12 @@ export default function ReviewRunner({ review }) {
         setRunning(true);
         try {
             const next = await runCode(review.kodeLengkap);
+            const visualizationLayout = buildBaselineLayout({
+                steps: next.steps,
+                codeLines: review.kodeLengkap.split("\n"),
+            });
             resetPlayer();
-            setResult(next);
+            setResult({ ...next, ranCode: review.kodeLengkap, visualizationLayout });
         } finally {
             setRunning(false);
         }
@@ -547,6 +562,14 @@ export default function ReviewRunner({ review }) {
                                     logs={result.logs}
                                     showAllLogs={player.atEnd}
                                     stepKey={player.current}
+                                    layoutHints={layoutHints}
+                                    ai={{
+                                        available: ai.available,
+                                        phase: ai.phase,
+                                        showAi: ai.showAi,
+                                        reason: ai.reason,
+                                        onToggle: ai.toggle,
+                                    }}
                                 />
                                 <ActiveTrace
                                     fields={fields}

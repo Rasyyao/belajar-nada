@@ -17,12 +17,16 @@
           "daftarAksi": ["Ani", "Budi", "batal", "Citra", "Dedi", "batal"]
         },
         "hasilAkhirTervalidasi": { "antrian": ["Ani", "Citra"] },
-        "alurData": {
-          "namaFunction": "catatAntrian",
-          "masuk": [{ "luar": "daftarAksi", "dalam": "daftarAksi" }],
-          "proses": "bikin antrian kosong → loop semua kejadian → push nama ATAU pop, tergantung isinya",
-          "keluar": { "dalam": "antrian", "luar": "antrian" }
-        },
+        "daftarFunction": [
+          {
+            "nama": "catatAntrian",
+            "perananSingkat": "Membangun antrian dari daftar aksi dengan menambah atau membatalkan anak sesuai kejadian.",
+            "parameter": [{ "nama": "daftarAksi", "keterangan": "Array berisi nama anak atau aksi batal secara berurutan." }],
+            "return": { "keterangan": "Array antrian akhir setelah semua aksi diproses." },
+            "dipanggilOleh": [],
+            "iniFunctionUtama": true
+          }
+        ],
         "catatanKonsep": [
           {
             "judul": "Satu loop, dua kemungkinan aksi",
@@ -57,17 +61,20 @@
           "jalurGenap": ["Ani", "Eka"],
           "jalurGanjil": ["Citra", "Fani"]
         },
-        "alurData": {
-          "namaFunction": "bagiJalur",
-          "masuk": [
-            { "luar": "antrian", "dalam": "antrian" },
-            { "luar": "jalurGenap", "dalam": "jalurGenap" },
-            { "luar": "jalurGanjil", "dalam": "jalurGanjil" }
-          ],
-          "proses": "loop ke antrian → cek index genap/ganjil → push ke jalur yang cocok",
-          "keluar": null,
-          "catatanKeluar": "Function ini SENGAJA gak punya return — dan itu bukan lupa. jalurGenap dan jalurGanjil yang di luar itu VARIABEL YANG SAMA PERSIS sama yang di dalam function: bukan disalin, tapi \"dipinjemin\". Jadi begitu di-push dari dalam, yang di luar ikut keisi sendiri."
-        },
+        "daftarFunction": [
+          {
+            "nama": "bagiJalur",
+            "perananSingkat": "Membagi antrian ke jalur genap dan ganjil berdasarkan posisi setiap anak.",
+            "parameter": [
+              { "nama": "antrian", "keterangan": "Array anak yang akan dibagi." },
+              { "nama": "jalurGenap", "keterangan": "Array tujuan untuk posisi genap." },
+              { "nama": "jalurGanjil", "keterangan": "Array tujuan untuk posisi ganjil." }
+            ],
+            "return": { "keterangan": "Tidak mengembalikan nilai; dua array tujuan diubah langsung melalui reference." },
+            "dipanggilOleh": [],
+            "iniFunctionUtama": true
+          }
+        ],
         "catatanKonsep": [
           {
             "judul": "Kok gak ada return tapi hasilnya kesimpen?",
@@ -117,16 +124,20 @@
         "hasilAkhirTervalidasi": {
           "daftarHarga": [15000, 30000, 15000, 30000]
         },
-        "alurData": {
-          "namaFunction": "buatDaftarHarga",
-          "masuk": [
-            { "luar": "daftarUmur", "dalam": "daftarUmur" },
-            { "luar": "hargaAnak", "dalam": "hargaAnak" },
-            { "luar": "hargaDewasa", "dalam": "hargaDewasa" }
-          ],
-          "proses": "bikin daftarHarga kosong → loop semua umur → if-else nentuin harga → push harga itu",
-          "keluar": { "dalam": "daftarHarga", "luar": "daftarHarga" }
-        },
+        "daftarFunction": [
+          {
+            "nama": "buatDaftarHarga",
+            "perananSingkat": "Menentukan harga tiket setiap pengunjung berdasarkan umur lalu menyusunnya sesuai urutan kedatangan.",
+            "parameter": [
+              { "nama": "daftarUmur", "keterangan": "Array umur pengunjung sesuai urutan kedatangan." },
+              { "nama": "hargaAnak", "keterangan": "Harga tiket untuk pengunjung di bawah 12 tahun." },
+              { "nama": "hargaDewasa", "keterangan": "Harga tiket untuk pengunjung dewasa." }
+            ],
+            "return": { "keterangan": "Array harga tiket untuk setiap pengunjung." },
+            "dipanggilOleh": [],
+            "iniFunctionUtama": true
+          }
+        ],
         "catatanKonsep": [
           {
             "judul": "if-else di sini buat nentuin NILAI, bukan buat mutusin push/pop",
@@ -152,12 +163,16 @@
           "daftarHarga": [15000, 30000, 15000, 30000]
         },
         "hasilAkhirTervalidasi": { "totalPendapatan": 90000 },
-        "alurData": {
-          "namaFunction": "hitungTotalPendapatan",
-          "masuk": [{ "luar": "daftarHarga", "dalam": "daftarHarga" }],
-          "proses": "loop semua harga → tambahin ke total tiap putaran",
-          "keluar": { "dalam": "total", "luar": "totalPendapatan" }
-        },
+        "daftarFunction": [
+          {
+            "nama": "hitungTotalPendapatan",
+            "perananSingkat": "Menjumlahkan semua harga tiket untuk mendapatkan pendapatan hari itu.",
+            "parameter": [{ "nama": "daftarHarga", "keterangan": "Array harga tiket hasil dari proses sebelumnya." }],
+            "return": { "keterangan": "Angka total pendapatan dari seluruh tiket." },
+            "dipanggilOleh": [],
+            "iniFunctionUtama": true
+          }
+        ],
         "catatanKonsep": [
           {
             "judul": "Part 2 ini nerusin hasil Part 1",

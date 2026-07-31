@@ -8,6 +8,51 @@ import { readAccess } from "../lib/access";
 
 const NO_LOGS = [];
 
+/** Label tombol "Sederhanakan tampilan" sesuai fase AI-nya saat ini. */
+function aiButtonLabel({ phase, showAi }) {
+  if (phase === "loading") return "AI lagi mikir…";
+  if (phase === "ready") return showAi ? "✨ Disederhanakan AI · klik buat balik" : "✨ Pakai versi AI";
+  if (phase === "error") return "✨ Coba lagi";
+  return "✨ Sederhanakan tampilan";
+}
+
+/**
+ * Toolbar kecil buat toggle refinement AI (Fase 2) — cuma nongol kalau ada
+ * array yang layak disederhanakan. Baseline rule-based udah kepasang duluan,
+ * jadi telat/gagalnya panggilan Groq gak pernah bikin tampilan blank.
+ */
+function AiSimplifyBar({ ai }) {
+  if (!ai?.available) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+      <button
+        type="button"
+        onClick={ai.onToggle}
+        disabled={ai.phase === "loading"}
+        className={`flex h-7 items-center gap-1.5 rounded-full border px-3 font-medium transition-colors disabled:opacity-60 ${
+          ai.phase === "ready" && ai.showAi
+            ? "border-worked/40 bg-worked-soft text-worked"
+            : "border-border bg-surface text-text-1 hover:bg-bg"
+        }`}
+      >
+        {ai.phase === "loading" && (
+          <span className="size-1.5 animate-pulse rounded-full bg-accent" />
+        )}
+        {aiButtonLabel(ai)}
+      </button>
+      {ai.phase === "ready" && ai.showAi && ai.reason && (
+        <span className="text-text-2">{ai.reason}</span>
+      )}
+      {ai.phase === "error" && (
+        <span className="text-text-2">
+          AI-nya lagi gak bisa dihubungi — tampilan rule-based tetap dipakai.
+        </span>
+      )}
+    </div>
+  );
+}
+
 /**
  * Isi panel Visualisasi untuk satu langkah: baris yang lagi jalan, penjabaran
  * apa yang disentuh baris itu, kartu variabel, dan output console.
@@ -21,6 +66,10 @@ export default function StepView({
   logs = NO_LOGS,
   showAllLogs = false,
   compare = null,
+  layoutHints = null,
+  // Kontrol toggle "Sederhanakan tampilan" (Fase 2 — lihat useAiSimplify).
+  // Biarkan null kalau pemanggilnya belum wire AI refinement.
+  ai = null,
   // Nomor langkah yang lagi ditampilin. Dipakai VarBoard sebagai bagian dari
   // `key` biar animasi "baru masuk" / "bakal keluar" main ulang tiap langkah.
   stepKey = 0,
@@ -53,6 +102,8 @@ export default function StepView({
         </code>
       </div>
 
+      <AiSimplifyBar ai={ai} />
+
       <AccessStrip access={access} />
 
       {/* Bagan tambahan buat soal yang ngebagi satu sumber ke beberapa array
@@ -72,6 +123,7 @@ export default function StepView({
         order={varOrder}
         access={access}
         stepKey={stepKey}
+        layoutHints={layoutHints}
       />
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-text-2">

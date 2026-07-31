@@ -8,7 +8,7 @@ const SEARCH_DELAY = 300;
 
 function Badge({ children }) {
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-bg px-2.5 py-1 text-[11px] font-medium text-text-2">
+        <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-border bg-bg px-2.5 py-1 text-[11px] font-medium text-text-2">
             {children}
         </span>
     );
@@ -66,20 +66,30 @@ function ProjectCard({ item, meta, children }) {
     const date = dateLabel(project);
     const season = item.kind === "mini" ? SEASONS[project.musim] : null;
     const theme = item.kind === "mini" ? null : partTheme(project.visualTheme);
+    const badgeLabel = item.kind === "mini" ? season?.label ?? project.musim : "Soal berpart";
+    const badgeTheme = themeName(item);
 
     return (
-        <li className="flex">
+        <li className="flex min-w-0">
             <Link
                 href={`/mini-project/${project.id}`}
-                className="group flex flex-1 flex-col gap-3 rounded-app border border-border bg-surface p-5 transition-colors hover:border-accent/50 hover:bg-accent-soft/30"
+                className="group flex min-w-0 flex-1 flex-col gap-3 rounded-app border border-border bg-surface p-4 transition-colors hover:border-accent/50 hover:bg-accent-soft/30"
             >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start justify-between gap-2">
                     <Badge>
                         <span aria-hidden>{season?.emoji ?? theme?.emoji ?? "•"}</span>
-                        {item.kind === "mini" ? season?.label ?? project.musim : "Soal berpart"}
-                        <span className="text-border">·</span>
-                        <code className="font-mono font-semibold text-accent">
-                            {themeName(item)}
+                        <span
+                            className="min-w-0 max-w-[15ch] truncate"
+                            title={badgeLabel}
+                        >
+                            {badgeLabel}
+                        </span>
+                        <span className="shrink-0 text-border">·</span>
+                        <code
+                            className="min-w-0 max-w-[15ch] truncate font-mono font-semibold text-accent"
+                            title={badgeTheme}
+                        >
+                            {badgeTheme}
                         </code>
                     </Badge>
                     <span className="shrink-0 text-right font-mono text-[11px] text-text-2">
@@ -88,7 +98,9 @@ function ProjectCard({ item, meta, children }) {
                     </span>
                 </div>
 
-                <h2 className="font-heading text-xl text-text-1">{project.judul}</h2>
+                <h2 className="line-clamp-2 min-h-14 font-heading text-xl text-text-1">
+                    {project.judul}
+                </h2>
 
                 <p className="text-[13px] leading-relaxed text-text-2">
                     {item.kind === "mini" ? project.cerita : project.ceritaUtama}
@@ -291,12 +303,17 @@ export default function ProjectBrowser({ projects, partProjects }) {
                                         {project.parts.map((part) => (
                                             <li
                                                 key={part.partKe}
-                                                className="flex items-baseline gap-2 text-[12.5px] text-text-2"
+                                                className="flex min-w-0 items-baseline gap-2 text-[12.5px] text-text-2"
                                             >
                                                 <span className="shrink-0 rounded-md border border-border bg-bg px-1.5 py-px font-mono text-[10px] font-semibold text-text-1">
                                                     Part {part.partKe}
                                                 </span>
-                                                {part.judulPart}
+                                                <span
+                                                    className="min-w-0 truncate"
+                                                    title={part.judulPart}
+                                                >
+                                                    {part.judulPart}
+                                                </span>
                                             </li>
                                         ))}
                                     </ol>

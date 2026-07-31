@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { listCases } from "../lib/adminRead";
+import Pagination from "../components/Pagination";
+import { parsePage } from "../lib/pagination";
 import { partTheme } from "../lib/themes";
 import DeleteButton from "./components/DeleteButton";
 import JsonCaseImporter from "./components/JsonCaseImporter";
@@ -11,8 +13,10 @@ const tanggal = (value) =>
     year: "numeric",
   });
 
-export default async function AdminCases() {
-  const cases = await listCases();
+export default async function AdminCases({ searchParams }) {
+  const params = await searchParams;
+  const page = parsePage(params?.page);
+  const { items: cases, total, page: currentPage } = await listCases(page);
 
   return (
     <div className="flex flex-col gap-5">
@@ -92,6 +96,8 @@ export default async function AdminCases() {
           })}
         </ul>
       )}
+
+      {cases.length > 0 && <Pagination page={currentPage} total={total} />}
     </div>
   );
 }

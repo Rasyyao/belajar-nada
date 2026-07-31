@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { listMateriForAdmin } from "../../lib/adminRead";
+import Pagination from "../../components/Pagination";
+import { parsePage } from "../../lib/pagination";
 import DeleteButton from "../components/DeleteButton";
 
 const tanggal = (value) =>
@@ -9,8 +11,10 @@ const tanggal = (value) =>
     year: "numeric",
   });
 
-export default async function AdminMateri() {
-  const list = await listMateriForAdmin();
+export default async function AdminMateri({ searchParams }) {
+  const params = await searchParams;
+  const page = parsePage(params?.page);
+  const { items: list, total, page: currentPage } = await listMateriForAdmin(page);
 
   return (
     <div className="flex flex-col gap-5">
@@ -44,7 +48,7 @@ export default async function AdminMateri() {
               key={item.id}
               className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-app border border-border bg-surface px-4 py-3"
             >
-              <div className="min-w-[12rem] flex-1">
+              <div className="min-w-48 flex-1">
                 <p className="font-heading text-base text-text-1">{item.judul}</p>
                 <p className="text-[11.5px] text-text-2">
                   {item.kategori || "tanpa kategori"}
@@ -75,6 +79,8 @@ export default async function AdminMateri() {
           ))}
         </ul>
       )}
+
+      {list.length > 0 && <Pagination page={currentPage} total={total} />}
     </div>
   );
 }

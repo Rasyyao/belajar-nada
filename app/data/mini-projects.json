@@ -16,12 +16,18 @@
     "hasilAkhirTervalidasi": {
       "tumpukanKacang": ["Kenari", "Almond", "Kastanye"]
     },
-    "alurData": {
-      "namaFunction": "simpanSemuaKacang",
-      "masuk": [{ "luar": "kacangDitemukan", "dalam": "kacangDitemukan" }],
-      "proses": "bikin tumpukan kosong → loop semua kacang → push satu-satu",
-      "keluar": { "dalam": "tumpukanKacang", "luar": "tumpukanKacang" }
-    },
+    "daftarFunction": [
+      {
+        "nama": "simpanSemuaKacang",
+        "perananSingkat": "Menyimpan semua kacang yang ditemukan ke dalam tumpukan secara berurutan.",
+        "parameter": [
+          { "nama": "kacangDitemukan", "keterangan": "Array berisi kacang yang ditemukan Tupai." }
+        ],
+        "return": { "keterangan": "Array tumpukan kacang dengan urutan yang sama seperti data masuk." },
+        "dipanggilOleh": [],
+        "iniFunctionUtama": true
+      }
+    ],
     "catatanKonsep": [
       {
         "judul": "push naruh di ujung belakang",
@@ -53,15 +59,19 @@
       "kacangDimakan": ["Kastanye", "Almond", "Kenari", "Habis!", "Habis!"],
       "tumpukanKacang": []
     },
-    "alurData": {
-      "namaFunction": "bongkarSimpanan",
-      "masuk": [
-        { "luar": "tumpukanKacang", "dalam": "tumpukanKacang" },
-        { "luar": "jumlahHari", "dalam": "jumlahHari" }
-      ],
-      "proses": "loop sebanyak jumlahHari → if-else tiap hari → pop kacang atau catat \"Habis!\"",
-      "keluar": { "dalam": "kacangDimakan", "luar": "kacangDimakan" }
-    },
+    "daftarFunction": [
+      {
+        "nama": "bongkarSimpanan",
+        "perananSingkat": "Mengambil kacang dari tumpukan selama jumlah hari yang ditentukan.",
+        "parameter": [
+          { "nama": "tumpukanKacang", "keterangan": "Array tumpukan kacang yang diambil dari bagian paling atas." },
+          { "nama": "jumlahHari", "keterangan": "Jumlah hari Tupai mencoba makan dari simpanan." }
+        ],
+        "return": { "keterangan": "Array kacang yang dimakan atau teks Habis! untuk hari tanpa kacang." },
+        "dipanggilOleh": [],
+        "iniFunctionUtama": true
+      }
+    ],
     "catatanKonsep": [
       {
         "judul": "LIFO — yang terakhir masuk, dia yang pertama keluar",

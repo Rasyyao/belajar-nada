@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { getAllReviews } from "../lib/reviews";
+import SiteNav from "../components/SiteNav";
+import Pagination from "../components/Pagination";
+import { parsePage } from "../lib/pagination";
+import { getReviewsPage } from "../lib/reviews";
 
 export const metadata = {
     title: "Review Mode — Playground Belajar",
@@ -8,12 +11,14 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function ReviewList() {
-    const reviews = await getAllReviews();
+export default async function ReviewList({ searchParams }) {
+    const params = await searchParams;
+    const page = parsePage(params?.page);
+    const { items: reviews, total, page: currentPage } = await getReviewsPage(page);
 
     return (
-        <div className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-6 px-4 py-6">
-            <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="mx-auto flex min-h-dvh w-full max-w-screen-2xl flex-col gap-5 px-3 py-5 sm:px-5 lg:px-6">
+            <header className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="font-heading text-2xl text-text-1">Review Mode</h1>
                     <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-text-2">
@@ -21,32 +26,7 @@ export default async function ReviewList() {
                         logika loop tanpa cerita tambahan.
                     </p>
                 </div>
-                <nav className="flex items-center gap-2">
-                    <Link
-                        href="/materi"
-                        className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-                    >
-                        Materi
-                    </Link>
-                    <Link
-                        href="/mini-project"
-                        className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-                    >
-                        Mini project
-                    </Link>
-                    <Link
-                        href="/quiz"
-                        className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-                    >
-                        Quick Review
-                    </Link>
-                    <Link
-                        href="/"
-                        className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
-                    >
-                        ← Playground
-                    </Link>
-                </nav>
+                <SiteNav current="/review" />
             </header>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -75,6 +55,8 @@ export default async function ReviewList() {
                     </Link>
                 ))}
             </div>
+
+            {reviews.length > 0 && <Pagination page={currentPage} total={total} />}
 
             {reviews.length === 0 && (
                 <p className="rounded-app border border-dashed border-border px-6 py-12 text-center text-sm text-text-2">

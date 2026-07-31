@@ -16,11 +16,12 @@ import {
   toJsonText,
 } from "./Fields";
 import TestRunPanel from "./TestRunPanel";
+import { mainFunctionName } from "../../lib/functionDirectory";
 
 /**
  * Form tambah/edit soal.
  *
- * Field JSON (`inputAwal`, `hasilAkhirTervalidasi`, `alurData`, `catatanKonsep`,
+ * Field JSON (`inputAwal`, `hasilAkhirTervalidasi`, `daftarFunction`, `catatanKonsep`,
  * `bandingkan`) disimpen sebagai TEKS di state dan baru di-parse pas mau kirim —
  * lihat catatan di `Fields.jsx`. Field yang isinya daftar teks biasa (hints,
  * inputs, label prompt) dapet editor sendiri, karena ngetik array JSON manual
@@ -43,7 +44,16 @@ const emptyPart = (partKe) => ({
   promptLabels: [],
   inputAwalText: "",
   hasilAkhirText: "",
-  alurDataText: "",
+  daftarFunctionText: JSON.stringify([
+    {
+      nama: "namaFunction",
+      perananSingkat: "Jelaskan peran function ini.",
+      parameter: [],
+      return: { keterangan: "Jelaskan hasil yang dikembalikan function ini." },
+      dipanggilOleh: [],
+      iniFunctionUtama: true,
+    },
+  ], null, 2),
   catatanKonsepText: "",
   bandingkanText: "",
 });
@@ -79,7 +89,7 @@ function toFormState(initial) {
       promptLabels: part.promptLabels ?? [],
       inputAwalText: toJsonText(part.inputAwal),
       hasilAkhirText: toJsonText(part.hasilAkhirTervalidasi),
-      alurDataText: toJsonText(part.alurData),
+      daftarFunctionText: toJsonText(part.daftarFunction),
       catatanKonsepText: toJsonText(part.catatanKonsep),
       bandingkanText: toJsonText(part.bandingkan),
     })),
@@ -89,7 +99,7 @@ function toFormState(initial) {
 const JSON_FIELDS = [
   "inputAwalText",
   "hasilAkhirText",
-  "alurDataText",
+  "daftarFunctionText",
   "catatanKonsepText",
   "bandingkanText",
 ];
@@ -177,14 +187,17 @@ export default function CaseForm({ initial }) {
           tema: item.tema,
           cerita: item.cerita,
           deskripsiSoal: item.deskripsiSoal,
-          namaFunction: item.namaFunction,
+          namaFunction: mainFunctionName(
+            parseJson(item.daftarFunctionText),
+            item.namaFunction,
+          ),
           starterCode: item.starterCode,
           hints: item.hints.filter((hint) => hint.trim() !== ""),
           inputs: form.tipe === "mini" ? item.inputs : [],
           promptLabels: form.tipe === "mini" ? item.promptLabels : [],
           inputAwal: parseJson(item.inputAwalText),
           hasilAkhirTervalidasi: parseJson(item.hasilAkhirText),
-          alurData: parseJson(item.alurDataText),
+          daftarFunction: parseJson(item.daftarFunctionText),
           catatanKonsep: parseJson(item.catatanKonsepText),
           bandingkan: parseJson(item.bandingkanText),
         })),
@@ -312,11 +325,10 @@ export default function CaseForm({ initial }) {
                 type="button"
                 onClick={() => setActive(index)}
                 aria-current={index === active ? "step" : undefined}
-                className={`h-9 rounded-[10px] border px-3 text-[12.5px] font-semibold transition-colors ${
-                  index === active
+                className={`h-9 rounded-[10px] border px-3 text-[12.5px] font-semibold transition-colors ${index === active
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-border bg-surface text-text-2 hover:bg-bg hover:text-text-1"
-                }`}
+                  }`}
               >
                 Part {item.partKe}
                 {item.judulPart ? ` · ${item.judulPart}` : ""}
@@ -360,12 +372,9 @@ export default function CaseForm({ initial }) {
             onChange={(v) => setPartField("tema", v)}
             placeholder="if-else"
           />
-          <Field
-            label="Nama function"
-            value={part.namaFunction}
-            onChange={(v) => setPartField("namaFunction", v)}
-            placeholder="hitungHarga"
-          />
+          <p className="rounded-[10px] border border-accent/25 bg-accent-soft/40 px-3 py-2 text-[12px] leading-relaxed text-text-2">
+            Nama function utama diambil dari item <code className="font-mono">iniFunctionUtama: true</code> di Daftar Function.
+          </p>
         </div>
 
         <TextArea
@@ -391,7 +400,7 @@ export default function CaseForm({ initial }) {
               value={part.starterCode}
               onChange={(v) => setPartField("starterCode", v)}
               activeLine={null}
-              onRun={() => {}}
+              onRun={() => { }}
             />
           </div>
         </div>
@@ -425,11 +434,11 @@ export default function CaseForm({ initial }) {
 
         <div className="grid gap-4 md:grid-cols-2">
           <JsonField
-            label="Alur data"
-            hint="diagram parameter → return"
-            value={part.alurDataText}
-            onChange={(v) => setPartField("alurDataText", v)}
-            rows={6}
+            label="Daftar function"
+            hint="array penjelasan semua function"
+            value={part.daftarFunctionText}
+            onChange={(v) => setPartField("daftarFunctionText", v)}
+            rows={10}
           />
           <JsonField
             label="Catatan konsep"

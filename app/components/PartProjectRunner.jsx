@@ -8,7 +8,7 @@ import ExpectedResult from "./ExpectedResult";
 import HintDialog from "./HintDialog";
 import InitialData from "./InitialData";
 import Panel from "./Panel";
-import ParamReturnDiagram from "./ParamReturnDiagram";
+import FunctionDirectory from "./FunctionDirectory";
 import PseudocodeDialog from "./PseudocodeDialog";
 import ResultCheck, { matchesExpected } from "./ResultCheck";
 import StepView, { buildVarOrder } from "./StepView";
@@ -17,7 +17,10 @@ import { es5ify, runCode } from "../lib/interpreter";
 import { buildConnectedCode } from "../lib/connectedProject";
 import { readDraft, writeDraft } from "../lib/draft";
 import { partTheme } from "../lib/themes";
+import { useAiSimplify } from "../lib/useAiSimplify";
 import { useStepPlayer } from "../lib/useStepPlayer";
+import { buildBaselineLayout, selectStepLayout } from "../lib/visualizationRefinement";
+import { mainFunctionName } from "../lib/functionDirectory";
 
 const NO_STEPS = [];
 const NO_LOGS = [];
@@ -119,6 +122,17 @@ export default function PartProjectRunner({ project, nextProject }) {
     () => findInputOrigins(parts, active),
     [parts, active],
   );
+  const currentStep = player.current;
+
+  // AI refinement (Fase 2) gak pernah ikut nge-block eksekusi — baseline
+  // rule-based di bawah kepasang instan, ini cuma nawarin upgrade opsional
+  // lewat tombol "Sederhanakan tampilan" di StepView. Di-reset otomatis
+  // tiap ganti part karena `result` (=`results[active]`) ikut ganti.
+  const ai = useAiSimplify(result);
+  const layoutHints = useMemo(
+    () => selectStepLayout(ai.activeLayout, currentStep),
+    [ai.activeLayout, currentStep],
+  );
 
   const executeCode = useCallback(async () => {
     setRunning(true);
@@ -126,10 +140,19 @@ export default function PartProjectRunner({ project, nextProject }) {
       // Soal berpart gak minta input lewat ambilInput() — data awalnya udah
       // ketulis di kode, jadi gak ada daftar input yang perlu disuapin.
       const next = await runCode(code);
+      const visualizationLayout = buildBaselineLayout({
+        steps: next.steps,
+        codeLines: code.split("\n"),
+      });
       // `runId` = penanda run ke berapa, dipakai sebagai `key` panel hasil biar
       // animasi "cocok!" main lagi tiap dijalanin.
       setResults((list) =>
-        replaceAt(list, active, { ...next, ranCode: code, runId: Date.now() }),
+        replaceAt(list, active, {
+          ...next,
+          ranCode: code,
+          runId: Date.now(),
+          visualizationLayout,
+        }),
       );
       resetPlayer();
       return next;
@@ -403,7 +426,7 @@ export default function PartProjectRunner({ project, nextProject }) {
                 </p>
               </div>
 
-              <ParamReturnDiagram alur={part.alurData} />
+              <FunctionDirectory functions={part.daftarFunction} />
 
               {(part.catatanKonsep ?? []).map((note) => (
                 <div
@@ -431,7 +454,7 @@ export default function PartProjectRunner({ project, nextProject }) {
         {/* Kolom tengah: kode part yang lagi kebuka. */}
         <Panel
           title="Kode"
-          hint={`Part ${part.partKe} · function ${part.namaFunction}()`}
+          hint={`Part ${part.partKe} · function ${mainFunctionName(part.daftarFunction, part.namaFunction)}()`}
           action={
             <div className="flex shrink-0 items-center gap-2">
               {!codeIsStarter && (
@@ -576,6 +599,14 @@ export default function PartProjectRunner({ project, nextProject }) {
                   showAllLogs={player.atEnd}
                   stepKey={player.current}
                   compare={part.bandingkan}
+                  layoutHints={layoutHints}
+                  ai={{
+                    available: ai.available,
+                    phase: ai.phase,
+                    showAi: ai.showAi,
+                    reason: ai.reason,
+                    onToggle: ai.toggle,
+                  }}
                 />
 
                 <ResultCheck
