@@ -31,6 +31,12 @@ export default async function MateriList() {
             Mini project
           </Link>
           <Link
+            href="/quiz"
+            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+          >
+            Quick Review
+          </Link>
+          <Link
             href="/"
             className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
           >

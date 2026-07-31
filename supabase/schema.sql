@@ -65,10 +65,56 @@ create table if not exists materi (
   created_at timestamptz default now()
 );
 
+-- Satu baris = satu latihan Review Mode. Kodenya sudah lengkap; siswa wajib
+-- mengisi prediksi jejak sebelum boleh melihat visualisasi eksekusi.
+create table if not exists review_soal (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  judul text not null,
+  level integer not null,
+  kode_lengkap text not null,
+  variabel_ditebak text not null,
+  hasil_akhir_tervalidasi jsonb not null,
+  jejak_tervalidasi jsonb not null,
+  catatan_konsep jsonb,
+  urutan integer default 0,
+  created_at timestamptz default now()
+);
+
 -- Urutan baca yang paling sering dipakai, biar gak sequential scan tiap request.
 create index if not exists parts_case_id_idx on parts (case_id, part_ke);
 create index if not exists cases_urutan_idx on cases (urutan, created_at);
 create index if not exists materi_urutan_idx on materi (urutan, created_at);
+create index if not exists review_soal_urutan_idx on review_soal (urutan, created_at);
+
+-- Satu set = satu topik Quick Review. Soal-soalnya berupa isian manual.
+create table if not exists quiz_set (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  judul text not null,
+  urutan integer default 0,
+  created_at timestamptz default now()
+);
+
+create table if not exists quiz_soal (
+  id uuid primary key default gen_random_uuid(),
+  quiz_set_id uuid references quiz_set(id) on delete cascade,
+  nomor integer not null,
+  cerita_singkat text not null,
+  variabel_tersedia jsonb,
+  kode_dengan_blank text not null,
+  jawaban_benar text not null,
+  penjelasan_singkat text not null,
+  created_at timestamptz default now(),
+  unique (quiz_set_id, nomor)
+);
+
+-- Aman untuk database yang sempat dibuat dari versi awal Quiz Quick Review.
+alter table quiz_soal
+  add column if not exists variabel_tersedia jsonb;
+
+create index if not exists quiz_set_urutan_idx on quiz_set (urutan, created_at);
+create index if not exists quiz_soal_set_nomor_idx on quiz_soal (quiz_set_id, nomor);
 
 -- ---------------------------------------------------------------------------
 -- 2. Row Level Security
@@ -79,6 +125,9 @@ create index if not exists materi_urutan_idx on materi (urutan, created_at);
 alter table cases enable row level security;
 alter table parts enable row level security;
 alter table materi enable row level security;
+alter table review_soal enable row level security;
+alter table quiz_set enable row level security;
+alter table quiz_soal enable row level security;
 
 drop policy if exists "Publik boleh baca cases" on cases;
 create policy "Publik boleh baca cases" on cases for select using (true);
@@ -88,6 +137,15 @@ create policy "Publik boleh baca parts" on parts for select using (true);
 
 drop policy if exists "Publik boleh baca materi" on materi;
 create policy "Publik boleh baca materi" on materi for select using (true);
+
+drop policy if exists "Publik boleh baca review_soal" on review_soal;
+create policy "Publik boleh baca review_soal" on review_soal for select using (true);
+
+drop policy if exists "Publik boleh baca quiz_set" on quiz_set;
+create policy "Publik boleh baca quiz_set" on quiz_set for select using (true);
+
+drop policy if exists "Publik boleh baca quiz_soal" on quiz_soal;
+create policy "Publik boleh baca quiz_soal" on quiz_soal for select using (true);
 
 -- ---------------------------------------------------------------------------
 -- 3. Storage — bucket buat file materi

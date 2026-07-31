@@ -130,6 +130,18 @@ export default function Playground() {
             Mini project
           </Link>
           <Link
+            href="/review"
+            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+          >
+            Review Mode
+          </Link>
+          <Link
+            href="/quiz"
+            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+          >
+            Quick Review
+          </Link>
+          <Link
             href="/materi"
             className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
           >
@@ -212,9 +224,8 @@ export default function Playground() {
           bodyClass="p-4"
         >
           <div
-            className={`flex flex-col gap-4 ${
-              steps.length === 0 ? "h-full justify-center" : ""
-            }`}
+            className={`flex flex-col gap-4 ${steps.length === 0 ? "h-full justify-center" : ""
+              }`}
           >
             <ErrorBox
               error={error}

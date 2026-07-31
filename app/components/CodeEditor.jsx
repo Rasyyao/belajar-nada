@@ -29,7 +29,13 @@ const EDITOR_OPTIONS = {
   scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
 };
 
-export default function CodeEditor({ value, onChange, activeLine, onRun }) {
+export default function CodeEditor({
+  value,
+  onChange,
+  activeLine,
+  onRun,
+  readOnly = false,
+}) {
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const decorationsRef = useRef(null);
@@ -76,7 +82,7 @@ export default function CodeEditor({ value, onChange, activeLine, onRun }) {
       theme="vs-dark"
       value={value}
       onChange={(next) => onChange(next ?? "")}
-      options={EDITOR_OPTIONS}
+      options={{ ...EDITOR_OPTIONS, readOnly }}
       onMount={(editor, monaco) => {
         editorRef.current = editor;
         monacoRef.current = monaco;

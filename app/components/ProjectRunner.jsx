@@ -13,6 +13,7 @@ import PseudocodeDialog from "./PseudocodeDialog";
 import ResultCheck from "./ResultCheck";
 import StepView, { buildVarOrder } from "./StepView";
 import Transport from "./Transport";
+import { readDraft, writeDraft } from "../lib/draft";
 import { es5ify, runCode } from "../lib/interpreter";
 import { SEASONS, themeIcon } from "../lib/themes";
 import { useStepPlayer } from "../lib/useStepPlayer";
@@ -24,6 +25,7 @@ const sameInputs = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Catatan pseudocode disimpen per project, biar gak ilang kalau halamannya kebuka ulang. */
 const notesKey = (id) => `pseudocode:${id}`;
+const draftKey = (id) => `draft:mini-project:${id}`;
 
 function readNotes(id) {
   try {
@@ -39,6 +41,7 @@ export default function ProjectRunner({ project, nextProject }) {
   const [result, setResult] = useState(null);
   const [running, setRunning] = useState(false);
   const [visualizing, setVisualizing] = useState(false);
+  const [draftReady, setDraftReady] = useState(false);
   const [notes, setNotes] = useState("");
   const [notesOpen, setNotesOpen] = useState(false);
   // 0 = hint belum pernah dibuka. Ke-reset sendiri kalau pindah project, karena
@@ -93,6 +96,28 @@ export default function ProjectRunner({ project, nextProject }) {
     setVisualizing(false);
     setInputs(value);
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const draft = readDraft(draftKey(project.id));
+      if (draft) {
+        if (typeof draft.code === "string") setCode(draft.code);
+        if (Array.isArray(draft.inputs)) setInputs(draft.inputs);
+        if (typeof draft.notes === "string") setNotes(draft.notes);
+        if (Number.isInteger(draft.hintLevel)) {
+          setHintLevel(Math.max(0, draft.hintLevel));
+        }
+      }
+      setDraftReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [project.id]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    writeDraft(draftKey(project.id), { code, inputs, notes, hintLevel });
+  }, [code, draftReady, hintLevel, inputs, notes, project.id]);
 
   useEffect(() => {
     const onKeyDown = (event) => {

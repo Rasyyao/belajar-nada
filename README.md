@@ -11,6 +11,29 @@ npm install
 npm run dev     # http://localhost:3000
 ```
 
+## Migrasi konten ke Supabase
+
+File JSON di `app/data/` sekarang berfungsi sebagai **sumber seed**, bukan
+sumber data runtime. Halaman Mini Project, Review Mode, dan Quiz Quick Review
+membaca dari Supabase.
+
+1. Isi `.env` dengan `NEXT_PUBLIC_SUPABASE_URL` dan `SUPABASE_SECRET_KEY`.
+2. Buka Supabase → SQL Editor.
+3. Jalankan seluruh isi `supabase/schema.sql`.
+4. Jalankan migrasi JSON:
+
+```bash
+npm run seed
+```
+
+Script tersebut mengisi `cases`/`parts`, `review_soal`, `quiz_set`, dan
+`quiz_soal`. Aman dijalankan ulang setelah JSON diperbarui: data child yang
+lama dihapus lalu ditulis ulang.
+
+Jika schema belum dijalankan, script berhenti dengan pesan yang jelas. Runtime
+tidak lagi diam-diam kembali ke JSON, sehingga perubahan database selalu
+terlihat di aplikasi.
+
 ## Cara pakai pas ngajar
 
 1. Tulis soal di panel **Soal**, breakdown bareng siswa di panel **Pseudocode**.

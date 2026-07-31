@@ -1,5 +1,3 @@
-import miniProjectsJson from "../data/mini-projects.json";
-import partProjectsJson from "../data/part-projects.json";
 import { isSupabaseConfigured, supabasePublic } from "./supabase";
 
 /**
@@ -16,31 +14,12 @@ import { isSupabaseConfigured, supabasePublic } from "./supabase";
  *
  * `slug` di database = `id` yang dipakai di URL dan di kode runner.
  *
- * FALLBACK ke file JSON bawaan (`app/data/*.json`) kejadian di DUA keadaan, dan
- * cuma dua ini:
- *   1. Env Supabase belum diisi sama sekali.
- *   2. Env-nya udah keisi tapi tabelnya belum dibikin (`supabase/schema.sql`
- *      belum dijalanin) — PostgREST balikin PGRST205.
- * Dua-duanya artinya "databasenya memang belum disiapin", bukan "databasenya
- * lagi bermasalah". Error lain (jaringan, key salah, kolom gak ada) tetap
- * dilempar apa adanya — kalau itu ikut jatuh ke JSON, data basi bakal kelihatan
- * seperti data beneran dan soal yang barusan diedit seolah-olah gak kesimpen.
+ * Setelah migrasi, Supabase adalah satu-satunya sumber runtime. JSON tetap
+ * disimpan sebagai sumber seed/migrasi, bukan fallback data aplikasi.
  */
 
 /** PGRST205 = tabelnya gak ada di schema cache, alias belum pernah dibikin. */
 const SCHEMA_BELUM_ADA = "PGRST205";
-
-function schemaBelumAda(error) {
-  return error?.code === SCHEMA_BELUM_ADA;
-}
-
-/** Isi `app/data/*.json`, dalam bentuk yang sama kayak hasil dari database. */
-function projectsDariJson() {
-  return [
-    ...miniProjectsJson.map((p) => ({ ...p, tipe: "mini", createdAt: null })),
-    ...partProjectsJson.map((p) => ({ ...p, tipe: "berpart", createdAt: null })),
-  ];
-}
 
 const CASE_COLUMNS =
   "id, slug, judul, cerita_utama, visual_theme, tipe, musim, urutan, created_at";
@@ -120,7 +99,9 @@ function toProject(row) {
 
 /** Semua soal, sudah dalam bentuk yang siap dipakai runner. */
 export async function getAllProjects() {
-  if (!isSupabaseConfigured()) return projectsDariJson();
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase belum dikonfigurasi untuk Mini Project.");
+  }
 
   const { data, error } = await supabasePublic()
     .from("cases")
@@ -128,7 +109,9 @@ export async function getAllProjects() {
     .order("urutan", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (schemaBelumAda(error)) return projectsDariJson();
+  if (error?.code === SCHEMA_BELUM_ADA) {
+    throw new Error("Tabel cases/parts belum ada. Jalankan supabase/schema.sql terlebih dahulu.");
+  }
   if (error) throw new Error(`Gagal ambil daftar soal dari Supabase: ${error.message}`);
 
   return (data ?? []).map(toProject).filter(Boolean);
@@ -150,7 +133,7 @@ export async function getPartProjects() {
  */
 export async function getProject(slug) {
   if (!isSupabaseConfigured()) {
-    return projectsDariJson().find((project) => project.id === slug) ?? null;
+    throw new Error("Supabase belum dikonfigurasi untuk Mini Project.");
   }
 
   const { data, error } = await supabasePublic()
@@ -159,8 +142,8 @@ export async function getProject(slug) {
     .eq("slug", slug)
     .maybeSingle();
 
-  if (schemaBelumAda(error)) {
-    return projectsDariJson().find((project) => project.id === slug) ?? null;
+  if (error?.code === SCHEMA_BELUM_ADA) {
+    throw new Error("Tabel cases/parts belum ada. Jalankan supabase/schema.sql terlebih dahulu.");
   }
   if (error) throw new Error(`Gagal ambil soal "${slug}": ${error.message}`);
   if (!data) return null;
@@ -172,13 +155,9 @@ export async function getProject(slug) {
  * Query-nya ringan (gak ikut narik parts) karena yang dibutuhin cuma judul.
  */
 export async function getProjectSequence() {
-  const dariJson = () =>
-    projectsDariJson().map((project) => ({
-      id: project.id,
-      judul: project.judul,
-    }));
-
-  if (!isSupabaseConfigured()) return dariJson();
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase belum dikonfigurasi untuk Mini Project.");
+  }
 
   const { data, error } = await supabasePublic()
     .from("cases")
@@ -186,7 +165,9 @@ export async function getProjectSequence() {
     .order("urutan", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (schemaBelumAda(error)) return dariJson();
+  if (error?.code === SCHEMA_BELUM_ADA) {
+    throw new Error("Tabel cases belum ada. Jalankan supabase/schema.sql terlebih dahulu.");
+  }
   if (error) throw new Error(`Gagal ambil urutan soal: ${error.message}`);
   return (data ?? []).map((row) => ({ id: row.slug, judul: row.judul }));
 }

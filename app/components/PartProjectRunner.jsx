@@ -14,11 +14,14 @@ import ResultCheck, { matchesExpected } from "./ResultCheck";
 import StepView, { buildVarOrder } from "./StepView";
 import Transport from "./Transport";
 import { es5ify, runCode } from "../lib/interpreter";
+import { buildConnectedCode } from "../lib/connectedProject";
+import { readDraft, writeDraft } from "../lib/draft";
 import { partTheme } from "../lib/themes";
 import { useStepPlayer } from "../lib/useStepPlayer";
 
 const NO_STEPS = [];
 const NO_LOGS = [];
+const draftKey = (id) => `draft:part-project:${id}`;
 
 /** Catatan pseudocode dipisah per part — tiap part soalnya beda. */
 const notesKey = (id, partKe) => `pseudocode:${id}:part-${partKe}`;
@@ -86,6 +89,9 @@ export default function PartProjectRunner({ project, nextProject }) {
   const [notes, setNotes] = useState(() => parts.map(() => ""));
   const [running, setRunning] = useState(false);
   const [visualizing, setVisualizing] = useState(false);
+  const [connectedRunning, setConnectedRunning] = useState(false);
+  const [connectedResult, setConnectedResult] = useState(null);
+  const [draftReady, setDraftReady] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
 
@@ -104,6 +110,10 @@ export default function PartProjectRunner({ project, nextProject }) {
   const resetPlayer = player.reset;
   const varOrder = useMemo(() => buildVarOrder(steps), [steps]);
   const codeLines = useMemo(() => code.split("\n"), [code]);
+  const connectedCode = useMemo(
+    () => buildConnectedCode(parts, codes),
+    [parts, codes],
+  );
   const theme = partTheme(project.visualTheme);
   const inputOrigins = useMemo(
     () => findInputOrigins(parts, active),
@@ -137,6 +147,51 @@ export default function PartProjectRunner({ project, nextProject }) {
     setVisualizing(true);
     if (result === null || stale) await executeCode();
   }, [executeCode, result, stale]);
+
+  const runConnected = useCallback(async () => {
+    setConnectedRunning(true);
+    try {
+      const next = await runCode(connectedCode);
+      setConnectedResult({
+        ...next,
+        ranCode: connectedCode,
+        runId: Date.now(),
+      });
+    } finally {
+      setConnectedRunning(false);
+    }
+  }, [connectedCode]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const draft = readDraft(draftKey(project.id));
+      if (draft?.codes?.length === parts.length) {
+        setCodes(draft.codes);
+        if (draft.notes?.length === parts.length) setNotes(draft.notes);
+        if (draft.hintLevels?.length === parts.length) {
+          setHintLevels(draft.hintLevels);
+        }
+        setActive(
+          Number.isInteger(draft.active)
+            ? Math.min(Math.max(draft.active, 0), parts.length - 1)
+            : 0,
+        );
+      }
+      setDraftReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [parts.length, project.id]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    writeDraft(draftKey(project.id), {
+      active,
+      codes,
+      hintLevels,
+      notes,
+    });
+  }, [active, codes, draftReady, hintLevels, notes, project.id]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -217,8 +272,14 @@ export default function PartProjectRunner({ project, nextProject }) {
   const codeIsStarter = code === part.starterCode;
   const updateCode = useCallback((value) => {
     setVisualizing(false);
+    setConnectedResult(null);
     setCode(value);
   }, [setCode]);
+
+  const connectedLastStep =
+    connectedResult?.steps?.[connectedResult.steps.length - 1] ?? null;
+  const connectedExpected = parts[parts.length - 1]?.hasilAkhirTervalidasi;
+  const connectedSolved = matchesExpected(connectedExpected, connectedLastStep);
 
   return (
     <div className="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
@@ -317,6 +378,7 @@ export default function PartProjectRunner({ project, nextProject }) {
             </div>
           ))}
         </nav>
+
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 px-4 py-3 xl:grid-cols-[24rem_minmax(0,1.35fr)_minmax(0,1fr)]">
@@ -441,11 +503,47 @@ export default function PartProjectRunner({ project, nextProject }) {
               ? `langkah ${player.current + 1} dari ${steps.length}`
               : "belum dijalankan"
           }
+          action={
+            <button
+              type="button"
+              onClick={runConnected}
+              disabled={connectedRunning}
+              className="flex h-8 items-center rounded-[9px] border border-accent/40 bg-accent-soft px-2.5 text-[11px] font-semibold text-accent transition-colors hover:bg-accent-soft/70 disabled:opacity-60"
+            >
+              {connectedRunning ? "Menguji…" : "Uji semua part"}
+            </button>
+          }
           bodyClass="p-4"
         >
           <div
             className={`flex flex-col gap-4 ${steps.length === 0 ? "min-h-full" : ""}`}
           >
+            {connectedResult && !visualizing && (
+              <div className="border-b border-border pb-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h3 className="text-[10px] font-semibold tracking-wider text-accent uppercase">
+                    Rangkaian semua part
+                  </h3>
+                  <span
+                    className={`text-[11px] font-semibold ${connectedSolved ? "text-success" : "text-error"
+                      }`}
+                  >
+                    {connectedSolved ? "✓ Cocok" : "Belum cocok"}
+                  </span>
+                </div>
+                {connectedResult.error ? (
+                  <p className="text-[12px] leading-relaxed text-error">
+                    Rangkaian berhenti: {connectedResult.error.message}
+                  </p>
+                ) : (
+                  <ResultCheck
+                    expected={connectedExpected}
+                    lastStep={connectedLastStep}
+                  />
+                )}
+              </div>
+            )}
+
             {!visualizing && (
               <ExpectedResult
                 expected={part.hasilAkhirTervalidasi}

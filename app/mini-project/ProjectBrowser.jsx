@@ -273,7 +273,7 @@ export default function ProjectBrowser({ projects, partProjects }) {
             </section>
 
             {visibleItems.length > 0 ? (
-                <ol className="grid gap-4 md:grid-cols-2">
+                <ol className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                     {visibleItems.map((item, index) => {
                         const project = item.project;
                         return (

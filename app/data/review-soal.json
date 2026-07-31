@@ -1,0 +1,47 @@
+[
+  {
+    "id": "prediksi-akumulasi-angka",
+    "judul": "Prediksi: Akumulasi Angka",
+    "level": 1,
+    "kodeLengkap": "function contohLevel1(n) {\n  var hasil = 0;\n  var i = 0;\n  while (i < n) {\n    hasil = hasil + i;\n    i = i + 1;\n  }\n  return hasil;\n}\n\nvar hasil = contohLevel1(5);",
+    "variabelDitebak": "hasil",
+    "hasilAkhirTervalidasi": 10,
+    "jejakTervalidasi": [
+      { "putaran": 1, "iSebelum": 0, "lolos": true, "hasilSesudah": 0, "iSesudah": 1 },
+      { "putaran": 2, "iSebelum": 1, "lolos": true, "hasilSesudah": 1, "iSesudah": 2 },
+      { "putaran": 3, "iSebelum": 2, "lolos": true, "hasilSesudah": 3, "iSesudah": 3 },
+      { "putaran": 4, "iSebelum": 3, "lolos": true, "hasilSesudah": 6, "iSesudah": 4 },
+      { "putaran": 5, "iSebelum": 4, "lolos": true, "hasilSesudah": 10, "iSesudah": 5 },
+      { "putaran": 6, "iSebelum": 5, "lolos": false, "hasilSesudah": null, "iSesudah": null }
+    ],
+    "catatanKonsep": [
+      {
+        "judul": "Yang dicek itu nilai LAMA, bukan nilai baru",
+        "isi": "Tiap kali mau masuk putaran, yang dicek itu nilai i yang MASIH LAMA (belum diubah di putaran itu). i baru berubah SETELAH kita udah 'masuk'. Jadi urutannya: cek dulu pake nilai lama -> baru boleh masuk -> baru nilainya diubah."
+      }
+    ],
+    "urutan": 1
+  },
+  {
+    "id": "prediksi-kelipatan-lewat-batas",
+    "judul": "Prediksi: Kelipatan yang Ngelewatin Batas",
+    "level": 2,
+    "kodeLengkap": "function contohLevel2(batas) {\n  var nilai = 0;\n  var hasil = [];\n  while (nilai < batas) {\n    nilai = nilai + 3;\n    hasil.push(nilai);\n  }\n  return hasil;\n}\n\nvar hasil = contohLevel2(10);",
+    "variabelDitebak": "hasil",
+    "hasilAkhirTervalidasi": [3, 6, 9, 12],
+    "jejakTervalidasi": [
+      { "putaran": 1, "nilaiSebelum": 0, "lolos": true, "nilaiSesudah": 3, "hasilSesudah": [3] },
+      { "putaran": 2, "nilaiSebelum": 3, "lolos": true, "nilaiSesudah": 6, "hasilSesudah": [3, 6] },
+      { "putaran": 3, "nilaiSebelum": 6, "lolos": true, "nilaiSesudah": 9, "hasilSesudah": [3, 6, 9] },
+      { "putaran": 4, "nilaiSebelum": 9, "lolos": true, "nilaiSesudah": 12, "hasilSesudah": [3, 6, 9, 12] },
+      { "putaran": 5, "nilaiSebelum": 12, "lolos": false, "nilaiSesudah": null, "hasilSesudah": null }
+    ],
+    "catatanKonsep": [
+      {
+        "judul": "Kok 12 ikut masuk, padahal udah lewat 10?",
+        "isi": "Pas nilai masih 9, dicek dulu: '9 < 10? iya, boleh lanjut'. BARU DI DALAM putaran itu nilai diubah jadi 12 dan dimasukin ke hasil. Jadi 12 itu SEMPET kepakai dulu, sebelum akhirnya di putaran BERIKUTNYA baru ketauan '12 < 10? enggak, berhenti'."
+      }
+    ],
+    "urutan": 2
+  }
+]

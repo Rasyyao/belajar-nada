@@ -159,6 +159,32 @@ body {
   }
 }
 
+/* Feedback singkat Quiz Quick Review: berhasil atau perlu coba lagi. */
+@keyframes quiz-correct {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.012);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes quiz-wrong {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
 /* Kepingan konfeti — jatuh sambil muter, sekali doang. */
 @keyframes confetti-fall {
   from {
@@ -189,6 +215,14 @@ body {
 
 .anim-confetti {
   animation: confetti-fall 900ms ease-in forwards;
+}
+
+.quiz-correct {
+  animation: quiz-correct 360ms ease-out;
+}
+
+.quiz-wrong {
+  animation: quiz-wrong 280ms ease-in-out;
 }
 
 /* Scrollbar tipis untuk panel visualisasi, biar gak makan tempat di layar proyektor. */

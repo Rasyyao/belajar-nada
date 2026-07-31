@@ -20,7 +20,7 @@ export default async function MiniProjectList() {
   const partProjects = all.filter((project) => project.tipe === "berpart");
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 px-4 py-6">
+    <div className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-6 px-4 py-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl text-text-1">Mini Project</h1>
@@ -29,6 +29,18 @@ export default async function MiniProjectList() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/review"
+            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+          >
+            Review Mode
+          </Link>
+          <Link
+            href="/quiz"
+            className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
+          >
+            Quick Review
+          </Link>
           <Link
             href="/materi"
             className="flex h-9 items-center rounded-[10px] border border-border bg-surface px-4 text-sm font-semibold text-text-1 transition-colors hover:bg-bg"
