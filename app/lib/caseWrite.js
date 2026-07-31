@@ -125,11 +125,23 @@ export function normalizeCasePayload(payload) {
  * sementara; makanya error-nya dibalikin apa adanya biar admin langsung nyimpen
  * ulang, bukan didiemin.
  */
-export async function writeCase({ id, caseRow, partRows }) {
+export async function writeCase({ id, caseRow, partRows, upsert = false }) {
   const supabase = supabaseAdmin();
 
-  const query = id
-    ? supabase.from("cases").update(caseRow).eq("id", id)
+  let targetId = id;
+  if (!targetId && upsert) {
+    const { data: existing, error: lookupError } = await supabase
+      .from("cases")
+      .select("id")
+      .eq("slug", caseRow.slug)
+      .maybeSingle();
+
+    if (lookupError) return { error: lookupError.message, status: 500 };
+    targetId = existing?.id;
+  }
+
+  const query = targetId
+    ? supabase.from("cases").update(caseRow).eq("id", targetId)
     : supabase.from("cases").insert(caseRow);
 
   const { data: saved, error: caseError } = await query.select("id, slug").single();

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listCases } from "../lib/adminRead";
 import { partTheme } from "../lib/themes";
 import DeleteButton from "./components/DeleteButton";
+import JsonCaseImporter from "./components/JsonCaseImporter";
 
 const tanggal = (value) =>
   new Date(value).toLocaleDateString("id-ID", {
@@ -31,6 +32,8 @@ export default async function AdminCases() {
         </Link>
       </div>
 
+      <JsonCaseImporter />
+
       {cases.length === 0 ? (
         <p className="rounded-app border border-dashed border-border px-6 py-12 text-center text-sm text-text-2">
           Belum ada soal. Kalau soal lama masih di file JSON, jalanin{" "}
@@ -50,7 +53,7 @@ export default async function AdminCases() {
                   {theme.emoji}
                 </span>
 
-                <div className="min-w-[12rem] flex-1">
+                <div className="min-w-48 flex-1">
                   <p className="font-heading text-base text-text-1">{item.judul}</p>
                   <p className="no-liga font-mono text-[11.5px] text-text-2">
                     {item.slug}

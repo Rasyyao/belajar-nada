@@ -17,12 +17,17 @@ export async function POST(request) {
   const { caseRow, partRows, error } = normalizeCasePayload(payload);
   if (error) return Response.json({ error }, { status: 400 });
 
-  const result = await writeCase({ caseRow, partRows });
+  const result = await writeCase({
+    caseRow,
+    partRows,
+    upsert: payload?.importMode === "upsert",
+  });
   if (result.error) {
     return Response.json({ error: result.error }, { status: result.status });
   }
 
   revalidatePath("/mini-project");
+  revalidatePath(`/mini-project/${result.data.slug}`);
   revalidatePath("/admin");
 
   return Response.json({ ok: true, id: result.data.id, slug: result.data.slug }, { status: 201 });
